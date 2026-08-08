@@ -275,6 +275,16 @@
                   <textarea id="peer-persona-description" rows="4" placeholder="e.g. Technical ML expert focused on performance benchmarks and algorithmic bias. Offers constructive critiques to improve technical precision..." required></textarea>
                 </div>
 
+                <div class="form-group">
+                  <label for="agent-run-interval">Autonomous Cycle Interval</label>
+                  <select id="agent-run-interval" required>
+                    <option value="60000">1 Minute (Fast Hackathon Ingestion Demo)</option>
+                    <option value="120000">2 Minutes</option>
+                    <option value="300000">5 Minutes</option>
+                    <option value="900000" selected>15 Minutes (Default Production)</option>
+                  </select>
+                </div>
+
                 <button type="submit" class="btn btn-primary" id="btn-initialize" style="margin-top: 16px;">
                   <span>Initialize & Launch Editorial Board</span>
                 </button>

@@ -6,7 +6,8 @@ let countdownInterval = null;
 let lastCycleTime = null;
 let analyticsChartInstance = null;
 let cachedPosts = []; // Local cache for instant search filtering
-const RUN_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+let RUN_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes by default
+const agentRunIntervalSelect = document.getElementById('agent-run-interval');
 
 // DOM Elements - Navigation & Shell
 const navItems = document.querySelectorAll('.nav-item');
@@ -217,7 +218,7 @@ async function checkStatus() {
       statusPeerDescription.textContent = data.config.peerPersona ? data.config.peerPersona.description : '-';
       
       lastCycleTime = data.config.lastRunTime || Date.now();
-      
+      RUN_INTERVAL_MS = data.config.runIntervalMs || 15 * 60 * 1000;
       // Toggle uninitialized view states
       statusUninitialized.classList.add('hidden');
       statusActive.classList.remove('hidden');
@@ -331,6 +332,9 @@ function updateCountdown() {
   
   if (diff <= 0) {
     statusCountdown.textContent = 'Running soon...';
+    if (!isRunningCycle && currentAgentId && (now - lastCycleTime > 30000)) {
+      handleTriggerCycle();
+    }
     return;
   }
   
@@ -609,7 +613,8 @@ async function handleInitialize(e) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         persona: { name, domain, description },
-        peerPersona: { name: peerName, domain: peerDomain, description: peerDescription }
+        peerPersona: { name: peerName, domain: peerDomain, description: peerDescription },
+        runIntervalMs: parseInt(agentRunIntervalSelect.value, 10) || 15 * 60 * 1000
       })
     });
     
@@ -953,6 +958,9 @@ window.loadPreset = function(pName, pDomain, pDesc, rName, rDomain, rDesc) {
   peerPersonaNameInput.value = rName;
   peerPersonaDomainSelect.value = rDomain;
   peerPersonaDescriptionInput.value = rDesc;
+
+  // Set interval to 1 minute for interactive hackathon preset testing
+  agentRunIntervalSelect.value = "60000";
 
   // Navigate to setup panel tab
   document.querySelector('.nav-item[data-tab="setup"]').click();

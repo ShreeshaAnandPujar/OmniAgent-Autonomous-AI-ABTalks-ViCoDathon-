@@ -48,11 +48,11 @@ app.use(express.json());
 app.use(express.static('public'));
 
 const PORT = process.env.PORT || 3000;
-const RUN_INTERVAL_MS = 15 * 60 * 1000; // Run every 15 minutes
+const RUN_INTERVAL_MS = 15 * 60 * 1000; // Run every 15 minutes by default
 
 let activeInterval = null;
 
-function startBackgroundWorker() {
+function startBackgroundWorker(intervalMs = 15 * 60 * 1000) {
   if (activeInterval) {
     clearInterval(activeInterval);
   }
@@ -70,9 +70,9 @@ function startBackgroundWorker() {
     } catch (error) {
       console.error("Error in background worker cycle:", error);
     }
-  }, RUN_INTERVAL_MS);
+  }, intervalMs);
   
-  console.log(`Background worker started. Running every ${RUN_INTERVAL_MS / 1000}s`);
+  console.log(`Background worker started. Running every ${intervalMs / 1000}s`);
 }
 
 // RESTORE background worker on server start if agent is already initialized
@@ -80,16 +80,21 @@ db.init();
 const existingConfig = db.getConfig();
 if (existingConfig) {
   console.log(`Restoring active agent session for ${existingConfig.persona.name}`);
-  startBackgroundWorker();
+  startBackgroundWorker(existingConfig.runIntervalMs || 15 * 60 * 1000);
 }
 
 // 1. Initialize Agent
 app.post('/api/agent/init', async (req, res) => {
-  const { persona, peerPersona } = req.body;
+  const { persona, peerPersona, runIntervalMs } = req.body;
   
   if (!persona || !persona.name || !persona.domain || !peerPersona || !peerPersona.name || !peerPersona.domain) {
     return res.status(400).json({ error: "Missing required fields for Primary and Peer Reviewer personas." });
   }
+
+  // Parse runIntervalMs
+  const intervalVal = parseInt(runIntervalMs, 10) || 15 * 60 * 1000;
+  // Enforce minimum of 30 seconds to prevent resource exhaustion
+  const finalIntervalMs = Math.max(30000, intervalVal);
 
   // Clear previous data for a clean test/evaluation session
   const agentId = `agent-${Math.random().toString(36).substring(2, 9)}`;
@@ -97,6 +102,7 @@ app.post('/api/agent/init', async (req, res) => {
     agentId,
     persona,
     peerPersona,
+    runIntervalMs: finalIntervalMs,
     initializedAt: new Date().toISOString(),
     lastRunTime: Date.now()
   };
@@ -110,10 +116,10 @@ app.post('/api/agent/init', async (req, res) => {
     fs.default.writeFileSync('db.json', JSON.stringify(freshDb, null, 2), 'utf8');
   });
 
-  console.log(`Initialized new agent ${persona.name} with Peer Reviewer ${peerPersona.name} (${agentId})`);
+  console.log(`Initialized new agent ${persona.name} with Peer Reviewer ${peerPersona.name} (${agentId}) with interval ${finalIntervalMs / 1000}s`);
 
   // Start background periodic task
-  startBackgroundWorker();
+  startBackgroundWorker(config.runIntervalMs);
 
   // Run the first agent cycle synchronously so the evaluator gets at least one post/decision immediately
   try {
