@@ -305,22 +305,53 @@
         <!-- Panel 3: Published Feed -->
         <section class="panel-view" id="panel-feed">
           <!-- Suggest Custom Topic Card -->
-          <div class="card glass-panel" style="margin-bottom: 24px;">
-            <h2>Suggest Custom Topic to Agent</h2>
-            <p class="card-desc">Directly inject a news item or thread into the agent's editorial judgment pipeline to force immediate evaluation.</p>
-            <form id="suggest-topic-form" style="display: flex; gap: 12px; align-items: flex-end; width: 100%; flex-wrap: wrap;">
-              <div class="form-group" style="flex: 2; min-width: 250px; gap: 6px;">
-                <label for="suggest-title" style="font-size: 11.5px;">Topic Title</label>
-                <input type="text" id="suggest-title" placeholder="e.g. Critical Snowflake data theft exposes 165 customer accounts" required style="padding: 8px 12px; font-size: 12.5px;">
+          <div class="card glass-panel" style="margin-bottom: 24px; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 12px;">
+              <div>
+                <h2 style="margin: 0;">AI Topic Scout & Ingestion</h2>
+                <p class="card-desc" style="margin: 4px 0 0 0;">Feed fresh technology updates to your autonomous board via AI search or manual links.</p>
               </div>
-              <div class="form-group" style="flex: 1; min-width: 150px; gap: 6px;">
-                <label for="suggest-url" style="font-size: 11.5px;">Source URL</label>
-                <input type="url" id="suggest-url" placeholder="e.g. https://techcrunch.com/snowflake-guilty" required style="padding: 8px 12px; font-size: 12.5px;">
+              <!-- Tab Switchers -->
+              <div class="scout-tabs" style="display: flex; gap: 4px; background: rgba(0, 0, 0, 0.2); padding: 4px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                <button class="tab-btn active" id="scout-agent-btn" onclick="switchScoutTab('scout-agent-tab')" style="background: var(--bg-hover); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s;">🤖 AI Agent Scout</button>
+                <button class="tab-btn" id="scout-manual-btn" onclick="switchScoutTab('scout-manual-tab')" style="background: transparent; color: var(--color-text-muted); border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s;">✏️ Manual Input</button>
               </div>
-              <button type="submit" class="btn btn-primary" id="btn-suggest-submit" style="padding: 8px 16px; height: 37px; font-size: 12.5px;">
-                <span>Submit to Agent</span>
-              </button>
-            </form>
+            </div>
+
+            <!-- Tab 1: AI Agent Scout -->
+            <div id="scout-agent-tab" class="scout-tab-content">
+              <div style="display: flex; gap: 10px; width: 100%; align-items: flex-end; flex-wrap: wrap;">
+                <div class="form-group" style="flex: 1; min-width: 250px; gap: 6px; margin: 0;">
+                  <label for="scout-query" style="font-size: 11.5px; color: var(--accent-light);">What topics should the AI Scout search for?</label>
+                  <input type="text" id="scout-query" placeholder="e.g. Snowflake security leaks, DeepSeek LLM, or WebGPU performance" style="padding: 8px 12px; font-size: 12.5px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(0, 0, 0, 0.2); color: #fff; width: 100%;">
+                </div>
+                <button onclick="runScoutQuery()" class="btn btn-primary" id="btn-scout-submit" style="padding: 8px 16px; height: 38px; font-size: 12.5px; border-radius: 8px;">
+                  <span>Scout Web Trends</span>
+                </button>
+              </div>
+
+              <!-- Scout results container -->
+              <div id="scout-results" style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding-right: 4px;">
+                <!-- Discovered items append here -->
+              </div>
+            </div>
+
+            <!-- Tab 2: Manual Ingestion -->
+            <div id="scout-manual-tab" class="scout-tab-content hidden">
+              <form id="suggest-topic-form" style="display: flex; gap: 12px; align-items: flex-end; width: 100%; flex-wrap: wrap; margin: 0;">
+                <div class="form-group" style="flex: 2; min-width: 250px; gap: 6px; margin: 0;">
+                  <label for="suggest-title" style="font-size: 11.5px;">Topic Title</label>
+                  <input type="text" id="suggest-title" placeholder="e.g. Critical Snowflake data theft exposes 165 customer accounts" required style="padding: 8px 12px; font-size: 12.5px;">
+                </div>
+                <div class="form-group" style="flex: 1; min-width: 150px; gap: 6px; margin: 0;">
+                  <label for="suggest-url" style="font-size: 11.5px;">Source URL</label>
+                  <input type="url" id="suggest-url" placeholder="e.g. https://techcrunch.com/snowflake-guilty" required style="padding: 8px 12px; font-size: 12.5px;">
+                </div>
+                <button type="submit" class="btn btn-secondary-outline" id="btn-suggest-submit" style="padding: 8px 16px; height: 37px; font-size: 12.5px; border-radius: 8px;">
+                  <span>Submit to Agent</span>
+                </button>
+              </form>
+            </div>
           </div>
 
           <div class="card glass-panel">

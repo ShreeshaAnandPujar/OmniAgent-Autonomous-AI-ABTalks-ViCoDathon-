@@ -961,3 +961,154 @@ window.loadPreset = function(pName, pDomain, pDesc, rName, rDomain, rDesc) {
   document.getElementById('init-form').scrollIntoView({ behavior: 'smooth' });
   showToast(`Loaded ${pName} & ${rName} preset! Press "Initialize" to boot the Editorial Board.`, 'success');
 };
+
+window.switchScoutTab = function(tabId) {
+  // Toggle contents
+  document.getElementById('scout-agent-tab').classList.add('hidden');
+  document.getElementById('scout-manual-tab').classList.add('hidden');
+  document.getElementById(tabId).classList.remove('hidden');
+
+  // Toggle active button style
+  document.getElementById('scout-agent-btn').classList.remove('active');
+  document.getElementById('scout-manual-btn').classList.remove('active');
+  
+  if (tabId === 'scout-agent-tab') {
+    document.getElementById('scout-agent-btn').classList.add('active');
+    document.getElementById('scout-agent-btn').style.background = 'var(--bg-hover)';
+    document.getElementById('scout-agent-btn').style.color = '#fff';
+    document.getElementById('scout-manual-btn').style.background = 'transparent';
+    document.getElementById('scout-manual-btn').style.color = 'var(--color-text-muted)';
+  } else {
+    document.getElementById('scout-manual-btn').classList.add('active');
+    document.getElementById('scout-manual-btn').style.background = 'var(--bg-hover)';
+    document.getElementById('scout-manual-btn').style.color = '#fff';
+    document.getElementById('scout-agent-btn').style.background = 'transparent';
+    document.getElementById('scout-agent-btn').style.color = 'var(--color-text-muted)';
+  }
+};
+
+window.runScoutQuery = async function() {
+  const queryInput = document.getElementById('scout-query');
+  const resultsContainer = document.getElementById('scout-results');
+  const btn = document.getElementById('btn-scout-submit');
+  
+  const query = queryInput.value.trim();
+  if (!query) {
+    showToast('Please enter a topic search query', 'warning');
+    return;
+  }
+
+  // Set loading state
+  btn.disabled = true;
+  btn.querySelector('span').textContent = 'Scouting...';
+  resultsContainer.innerHTML = `
+    <div style="text-align: center; padding: 16px; color: var(--color-text-muted);">
+      <div class="spinner" style="margin: 0 auto 8px auto;"></div>
+      <p style="font-size: 12px; margin: 0;">AI Agent scouting HackerNews & GitHub for fresh trends...</p>
+    </div>
+  `;
+
+  try {
+    const res = await fetch(`/api/agent/scout?query=${encodeURIComponent(query)}`);
+    if (!res.ok) throw new Error('Search request failed');
+    const data = await res.json();
+    
+    resultsContainer.innerHTML = '';
+    
+    if (!data.results || data.results.length === 0) {
+      resultsContainer.innerHTML = `<div style="text-align: center; padding: 12px; color: var(--color-text-muted); font-size: 12px;">No matching recent topics found. Try another term.</div>`;
+      return;
+    }
+
+    data.results.forEach((item, index) => {
+      const itemEl = document.createElement('div');
+      itemEl.style.display = 'flex';
+      itemEl.style.justifyContent = 'space-between';
+      itemEl.style.alignItems = 'center';
+      itemEl.style.padding = '10px 14px';
+      itemEl.style.background = 'rgba(255, 255, 255, 0.03)';
+      itemEl.style.border = '1px solid rgba(255, 255, 255, 0.05)';
+      itemEl.style.borderRadius = '8px';
+      itemEl.style.gap = '12px';
+      
+      itemEl.innerHTML = `
+        <div style="flex: 1; min-width: 0; text-align: left;">
+          <div style="font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 2px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+            ${item.title}
+          </div>
+          <div style="font-size: 10px; color: var(--color-text-muted); display: flex; gap: 8px;">
+            <span style="color: var(--accent-light); font-weight: 600;">${item.source}</span>
+            <span>👤 ${item.author}</span>
+            <span>⭐ ${item.score}</span>
+          </div>
+        </div>
+        <button onclick="ingestScoutedTopic('${encodeURIComponent(item.title)}', '${encodeURIComponent(item.url)}', this)" style="background: rgba(0, 245, 212, 0.15); color: var(--accent-light); border: 1px solid rgba(0, 245, 212, 0.3); padding: 5px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap; transition: all 0.2s;">
+          Feed Board
+        </button>
+      `;
+      resultsContainer.appendChild(itemEl);
+    });
+  } catch (err) {
+    console.error(err);
+    resultsContainer.innerHTML = `<div style="text-align: center; padding: 12px; color: var(--color-danger); font-size: 12px;">Failed to fetch trends. Please check network.</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.querySelector('span').textContent = 'Scout Web Trends';
+  }
+};
+
+window.ingestScoutedTopic = async function(titleEscaped, urlEscaped, btnElement) {
+  const title = decodeURIComponent(titleEscaped);
+  const url = decodeURIComponent(urlEscaped);
+
+  if (!currentAgentId) {
+    showToast('Initialize an Agent Editorial Board first!', 'warning');
+    return;
+  }
+
+  // Set loading on target row button
+  const originalText = btnElement.textContent;
+  btnElement.disabled = true;
+  btnElement.textContent = 'Critiquing...';
+  btnElement.style.background = 'rgba(255, 255, 255, 0.1)';
+  btnElement.style.color = '#fff';
+
+  showToast(`Agent reviewing "${title}"...`, 'info');
+
+  try {
+    const res = await fetch('/api/agent/suggest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agentId: currentAgentId, title, url })
+    });
+    
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || 'Failed to evaluate topic');
+    }
+    
+    const data = await res.json();
+    
+    if (data.isWorthPublishing) {
+      showToast('Topic ACCEPTED and published to feed!', 'success');
+      btnElement.textContent = 'Published';
+      btnElement.style.background = 'rgba(0, 245, 212, 0.2)';
+      btnElement.style.borderColor = 'var(--accent-light)';
+      btnElement.style.color = 'var(--accent-light)';
+    } else {
+      showToast(`Topic REJECTED: ${data.rationale}`, 'info');
+      btnElement.textContent = 'Rejected';
+      btnElement.style.background = 'rgba(255, 71, 126, 0.2)';
+      btnElement.style.borderColor = 'var(--color-danger)';
+      btnElement.style.color = 'var(--color-danger)';
+    }
+    
+    // Refresh status and feed items
+    await checkStatus();
+  } catch (error) {
+    console.error("Ingest scouted topic error:", error);
+    showToast(error.message || 'Failed to submit topic', 'error');
+    btnElement.disabled = false;
+    btnElement.textContent = originalText;
+  }
+};
