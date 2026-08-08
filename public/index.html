@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autonomous Tech Persona Agent - Control Center</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <!-- Toast Overlay -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Background Glows -->
+  <div class="glow glow-1"></div>
+  <div class="glow glow-2"></div>
+  <div class="glow glow-3"></div>
+
+  <div class="app-layout">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar glass-panel">
+      <div class="sidebar-logo">
+        <div class="pulse-indicator" id="global-status-dot"></div>
+        <div class="logo-text">
+          <h2>OmniAgent</h2>
+          <span>Autonomous AI</span>
+        </div>
+      </div>
+      
+      <div class="sidebar-divider"></div>
+      
+      <!-- Nav items -->
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-tab="overview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          <span>Overview</span>
+        </button>
+        
+        <button class="nav-item" data-tab="setup">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.43l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span>Persona Setup</span>
+        </button>
+        
+        <button class="nav-item" data-tab="feed">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 0 1-2.25 2.25M16.5 7.5V18a2.25 2.25 0 0 0 2.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 0 0 2.25 2.25h13.5M6 7.5h3v3H6v-3Z"/></svg>
+          <span>Published Feed</span>
+        </button>
+        
+        <button class="nav-item" data-tab="chat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8Z"/></svg>
+          <span>Persona Chat</span>
+        </button>
+        
+        <button class="nav-item" data-tab="logs">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5"/></svg>
+          <span>System Logs</span>
+        </button>
+        
+        <button class="nav-item" data-tab="rejected">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"/></svg>
+          <span>Audit Log</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="badge-pill active" id="global-status-badge">Autonomous Mode</div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- Top header bar -->
+      <header class="content-header glass-panel">
+        <div class="header-title">
+          <h1 id="current-tab-title">Overview</h1>
+        </div>
+        <div class="header-system-info">
+          <div class="env-badges">
+            <div class="env-item">
+              <span>Gemini:</span>
+              <span id="env-gemini-status" class="env-badge">Checking...</span>
+            </div>
+            <div class="env-item">
+              <span>Memory:</span>
+              <span id="env-mcp-status" class="env-badge env-badge-success">Connected</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- PANELS CONTENT -->
+      <div class="panels-container">
+        
+        <!-- Panel 1: Overview -->
+        <section class="panel-view active" id="panel-overview">
+          <!-- Active Agent Status & Overview Metrics -->
+          <div class="overview-grid">
+            
+            <!-- Active Persona Details -->
+            <div class="card glass-panel flex-2">
+              <div class="card-header-action">
+                <h2>Active Agent Persona</h2>
+                <button class="btn btn-sm btn-danger-outline hidden" id="btn-reset">Reset Persona</button>
+              </div>
+              <p class="card-desc">Current initialized context running the autonomous loop.</p>
+              
+              <div class="overview-status-wrap" id="overview-status-uninitialized">
+                <div class="status-placeholder">
+                  <h3>No Active Persona</h3>
+                  <p>Navigate to the "Persona Setup" tab on the left to configure your agent and start processing feeds.</p>
+                </div>
+              </div>
+              
+              <div class="overview-status-wrap hidden" id="overview-status-active">
+                <div class="status-details-grid">
+                  <div class="detail-box">
+                    <span class="lbl">Name</span>
+                    <span class="val" id="status-name">-</span>
+                  </div>
+                  <div class="detail-box">
+                    <span class="lbl">Domain Focus</span>
+                    <span class="val badge-domain" id="status-domain">-</span>
+                  </div>
+                  <div class="detail-box">
+                    <span class="lbl">Agent Session ID</span>
+                    <span class="val code-font" id="status-id">-</span>
+                  </div>
+                  <div class="detail-box">
+                    <span class="lbl">Initialized On</span>
+                    <span class="val" id="status-initialized">-</span>
+                  </div>
+                  <div class="detail-box">
+                    <span class="lbl">Last Execution Run</span>
+                    <span class="val" id="status-last-run">-</span>
+                  </div>
+                  <div class="detail-box">
+                    <span class="lbl">Next Schedule Run</span>
+                    <span class="val countdown-glow" id="status-countdown">Calculating...</span>
+                  </div>
+                </div>
+                
+                <div class="detail-box-full">
+                  <span class="lbl">Character Profile & Writing Tone</span>
+                  <span class="val" id="status-description">-</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Chart Card -->
+            <div class="card glass-panel flex-1">
+              <h2>Decision Analytics</h2>
+              <p class="card-desc">Ratio of evaluated publication metrics.</p>
+              
+              <div class="chart-box">
+                <div class="analytics-chart-container">
+                  <canvas id="analyticsChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Stats Numbers Row -->
+          <div class="stats-row-grid">
+            <div class="stat-card glass-panel">
+              <span class="num" id="overview-stat-published">0</span>
+              <span class="lbl">Topics Published</span>
+            </div>
+            <div class="stat-card glass-panel">
+              <span class="num" id="overview-stat-rejected">0</span>
+              <span class="lbl">Topics Audited / Rejected</span>
+            </div>
+            <div class="stat-card glass-panel">
+              <span class="num" id="overview-stat-ratio">0%</span>
+              <span class="lbl">Editorial Selective Rate</span>
+            </div>
+          </div>
+          
+          <!-- Hidden standard selectors to keep compatibility -->
+          <div class="system-stats hidden">
+            <span id="stat-published-count">0</span>
+            <span id="stat-rejected-count">0</span>
+          </div>
+        </section>
+
+        <!-- Panel 2: Persona Setup -->
+        <section class="panel-view" id="panel-setup">
+          <div class="setup-grid">
+            
+            <div class="card glass-panel">
+              <h2>Persona Configurator</h2>
+              <p class="card-desc">Configure the AI Agent with a unique profile. Initializing resets the database arrays for clean evaluation.</p>
+              
+              <form id="init-form" class="config-form">
+                <div class="form-group">
+                  <label for="persona-name">Agent Name</label>
+                  <input type="text" id="persona-name" placeholder="e.g. Ada, ByteWeaver, TechInsight" required>
+                </div>
+                
+                <div class="form-group">
+                  <label for="persona-domain">Target Domain Domain Focus</label>
+                  <select id="persona-domain" required>
+                    <option value="" disabled selected>Select a domain...</option>
+                    <option value="AI Security">AI Security</option>
+                    <option value="AI Ethics">AI Ethics</option>
+                    <option value="Machine Learning">Machine Learning</option>
+                    <option value="Robotics">Robotics</option>
+                    <option value="AI Product Analyst">AI Product Analyst</option>
+                    <option value="Open Source">Open Source</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="persona-description">Character Profile & Writing Tone</label>
+                  <textarea id="persona-description" rows="4" placeholder="e.g. Critical and technical AI researcher. Writes concisely, avoids corporate jargon, evaluates items with high selective standards..." required></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="btn-initialize">
+                  <span>Initialize & Launch Agent</span>
+                </button>
+              </form>
+            </div>
+
+            <div class="card glass-panel">
+              <h2>Evaluation Guidelines</h2>
+              <div class="guidelines-doc">
+                <div class="doc-section">
+                  <h3>🧠 Continuous Autonomy</h3>
+                  <p>The agent runs continuously in the background using dynamic node workers to check Hacker News, TechCrunch, and GitHub every 15 minutes. To avoid cold starts or sleeps, a passive cron trigger automatically launches cycles when the server is visited.</p>
+                </div>
+                <div class="doc-section">
+                  <h3>🔍 Self-Reflection Critique</h3>
+                  <p>When evaluated, the agent drafts a response, critiquing it against style requirements (avoiding emojis or hashtags) before executing a refined final writeout.</p>
+                </div>
+                <div class="doc-section">
+                  <h3>💾 Episodic Memory Catalog</h3>
+                  <p>All finalized entries are pushed to the Breeth memory graph to prevent duplicates and maintain long-term contextual continuity.</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Panel 3: Published Feed -->
+        <section class="panel-view" id="panel-feed">
+          <!-- Suggest Custom Topic Card -->
+          <div class="card glass-panel" style="margin-bottom: 24px;">
+            <h2>Suggest Custom Topic to Agent</h2>
+            <p class="card-desc">Directly inject a news item or thread into the agent's editorial judgment pipeline to force immediate evaluation.</p>
+            <form id="suggest-topic-form" style="display: flex; gap: 12px; align-items: flex-end; width: 100%; flex-wrap: wrap;">
+              <div class="form-group" style="flex: 2; min-width: 250px; gap: 6px;">
+                <label for="suggest-title" style="font-size: 11.5px;">Topic Title</label>
+                <input type="text" id="suggest-title" placeholder="e.g. Critical Snowflake data theft exposes 165 customer accounts" required style="padding: 8px 12px; font-size: 12.5px;">
+              </div>
+              <div class="form-group" style="flex: 1; min-width: 150px; gap: 6px;">
+                <label for="suggest-url" style="font-size: 11.5px;">Source URL</label>
+                <input type="url" id="suggest-url" placeholder="e.g. https://techcrunch.com/snowflake-guilty" required style="padding: 8px 12px; font-size: 12.5px;">
+              </div>
+              <button type="submit" class="btn btn-primary" id="btn-suggest-submit" style="padding: 8px 16px; height: 37px; font-size: 12.5px;">
+                <span>Submit to Agent</span>
+              </button>
+            </form>
+          </div>
+
+          <div class="card glass-panel">
+            <div class="feed-header-actions">
+              <div class="search-bar-wrap">
+                <input type="text" id="feed-search" placeholder="Search publications...">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              </div>
+              <div class="action-buttons-wrap">
+                <button class="btn btn-accent" id="btn-trigger-cycle">
+                  <svg class="icon-spin hidden" id="cycle-loading-icon" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" stroke-dasharray="32" stroke-linecap="round"></circle>
+                  </svg>
+                  <span id="btn-trigger-text">Run Cycle Now</span>
+                </button>
+                <button class="btn btn-secondary-outline" id="btn-refresh-feed">Refresh Feed</button>
+              </div>
+            </div>
+
+            <div class="feed-container" id="feed-container">
+              <!-- Loading Indicator -->
+              <div class="feed-placeholder" id="feed-loading">
+                <div class="spinner"></div>
+                <p>Fetching publication feed...</p>
+              </div>
+
+              <!-- Empty State -->
+              <div class="feed-placeholder hidden" id="feed-empty">
+                <svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 0 1-2.25 2.25M16.5 7.5V18a2.25 2.25 0 0 0 2.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 0 0 2.25 2.25h13.5M6 7.5h3v3H6v-3Z" />
+                </svg>
+                <p>No published articles found. Initialize your persona in the "Persona Setup" tab to begin crawling feeds!</p>
+              </div>
+
+              <!-- Feed Items list -->
+              <div class="feed-list hidden" id="feed-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Panel 4: Persona Chat -->
+        <section class="panel-view" id="panel-chat">
+          <div class="card glass-panel chat-panel-card">
+            <div class="chat-card-header">
+              <h2>Interactive Conversation Playground</h2>
+              <button class="btn btn-sm btn-secondary-outline" id="btn-clear-chat">Clear History</button>
+            </div>
+            <p class="card-desc">Test your agent's domain knowledge and style guidelines by holding a direct conversation.</p>
+            
+            <div class="chat-window">
+              <div class="chat-messages" id="chat-messages-body">
+                <div class="chat-bubble agent-bubble">
+                  Hello! I am initialized and ready to discuss tech trends and insights. Ask me anything!
+                </div>
+              </div>
+              <form id="chat-form" class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Discuss tech trends with the persona..." required>
+                <button type="submit" class="btn btn-primary">Send Message</button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- Panel 5: System Logs -->
+        <section class="panel-view" id="panel-logs">
+          <div class="card glass-panel logs-panel-card">
+            <h2>Real-time Process Terminal</h2>
+            <p class="card-desc">Console streams showing crawl actions, Gemini model queries, self-critique steps, and mcp handshakes.</p>
+            
+            <div class="terminal-window full-terminal">
+              <div class="terminal-body" id="terminal-log-body">
+                <div class="log-line text-muted">[System] Ready to start.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Panel 6: Audit Log (Rejected) -->
+        <section class="panel-view" id="panel-rejected">
+          <div class="card glass-panel">
+            <h2>Editorial Decisions & Audits</h2>
+            <p class="card-desc">Detailed logs of crawled articles that did not meet the selective relevance standards, including reasoning.</p>
+            
+            <div class="rejected-container full-height-container" id="rejected-container">
+              <div class="feed-placeholder hidden" id="rejected-empty">
+                <p>No audited items found yet.</p>
+              </div>
+              <div class="rejected-list" id="rejected-list"></div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+    </main>
+  </div>
+  
+  <!-- App Script -->
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "autonomous-agent",
+  "version": "1.0.0",
+  "description": "Autonomous AI/Tech Persona Agent",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@modelcontextprotocol/sdk": "^0.6.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1"
+  }
+}

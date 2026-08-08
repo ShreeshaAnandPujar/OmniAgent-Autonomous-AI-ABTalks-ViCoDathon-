@@ -1,0 +1,7 @@
+node_modules/
+.env
+.DS_Store
+db.json
+package-lock.json
+test_gemini.js
+PROMPTS.md
