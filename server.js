@@ -525,17 +525,19 @@ app.post('/api/workspace/refactor', async (req, res) => {
     console.log(`${logPrefix} Action: Generating edits using Gemini-2.5-Flash...`);
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
     const systemInstruction = `You are Devin/OpenHands, an autonomous software engineering agent. Your task is to edit the provided file content based on the user's prompt. 
 Return ONLY the complete updated file content as plain text. Do not wrap it in markdown code blocks, do not explain anything, do not output any markdown formatting before or after the code. Return ONLY the code.`;
+
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.5-flash",
+      systemInstruction: systemInstruction
+    });
 
     const response = await model.generateContent({
       contents: [
         { role: 'user', parts: [{ text: `File: ${filepath}\n\nCurrent Content:\n${currentCode}\n\nUser Request: ${prompt}` }] }
       ],
       generationConfig: {
-        systemInstruction: systemInstruction,
         temperature: 0.1
       }
     });
