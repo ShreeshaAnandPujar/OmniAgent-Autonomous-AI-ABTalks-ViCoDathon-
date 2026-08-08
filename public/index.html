@@ -58,6 +58,11 @@
           <span>Persona Chat</span>
         </button>
         
+        <button class="nav-item" data-tab="workspace">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.25 9.75L16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z"/></svg>
+          <span>Dev Sandbox</span>
+        </button>
+        
         <button class="nav-item" data-tab="logs">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5"/></svg>
           <span>System Logs</span>
@@ -422,6 +427,46 @@
                 <button type="submit" class="btn btn-primary">Send Message</button>
               </form>
             </div>
+          </div>
+        </section>
+
+        <!-- Panel 7: Dev Sandbox (OpenHands Capability) -->
+        <section class="panel-view" id="panel-workspace">
+          <div style="display: grid; grid-template-columns: 240px 1fr; gap: 20px; height: calc(100vh - 180px); min-height: 500px;">
+            
+            <!-- Left Column: File Explorer -->
+            <div class="card glass-panel" style="padding: 16px; display: flex; flex-direction: column; overflow: hidden; margin: 0;">
+              <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 13.5px; font-weight: 700; color: var(--accent-light); text-transform: uppercase; letter-spacing: 0.5px;">📂 Workspace Files</h3>
+              <div id="workspace-file-tree" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;">
+                <!-- Files populate here -->
+              </div>
+            </div>
+
+            <!-- Right Column: Code Editor & Agent Terminal -->
+            <div style="display: grid; grid-template-rows: 1fr 180px; gap: 16px;">
+              
+              <!-- Code view & Editor -->
+              <div class="card glass-panel" style="display: flex; flex-direction: column; overflow: hidden; padding: 16px; margin: 0; position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                  <h3 id="workspace-editor-title" style="margin: 0; font-size: 13.5px; font-weight: 700; color: #fff;">Select a file to edit...</h3>
+                  <span id="workspace-editor-size" style="font-size: 11px; color: var(--color-text-muted);"></span>
+                </div>
+                <textarea id="workspace-code-editor" readonly style="flex: 1; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; color: #a5d6ff; font-family: 'Courier New', Courier, monospace; font-size: 12px; padding: 12px; resize: none; line-height: 1.5; white-space: pre; overflow: auto; outline: none;"></textarea>
+              </div>
+
+              <!-- OpenHands Agent Command & Action Console -->
+              <div class="card glass-panel" style="display: flex; gap: 16px; padding: 16px; margin: 0; align-items: center;">
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 6px; height: 100%;">
+                  <h3 style="margin: 0; font-size: 12px; color: var(--accent-light); font-weight: 700; text-transform: uppercase;">🤖 AI Code Refactor Agent</h3>
+                  <textarea id="workspace-refactor-prompt" rows="2" placeholder="Tell the agent what to implement or fix in the selected file (e.g. 'Add comments' or 'Optimize imports')..." style="flex: 1; padding: 8px 12px; font-size: 12.5px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: #fff; resize: none; outline: none;"></textarea>
+                </div>
+                <button onclick="runWorkspaceRefactor()" class="btn btn-primary" id="btn-workspace-refactor" style="height: 50px; font-size: 13px; border-radius: 8px; width: 150px; display: flex; align-items: center; justify-content: center; font-weight: 700;">
+                  <span>Refactor File</span>
+                </button>
+              </div>
+
+            </div>
+
           </div>
         </section>
 

@@ -1,5 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 import { db } from './db.js';
 import { runAgentCycle, processSingleTopic } from './agent.js';
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -421,6 +423,148 @@ app.get('/api/agent/scout', async (req, res) => {
   }
 
   return res.json({ success: true, query, results: scouted });
+});
+
+// Helper to list files recursively
+function getFilesRecursively(dir, rootDir = dir) {
+  let results = [];
+  try {
+    const list = fs.readdirSync(dir);
+    list.forEach(file => {
+      const fullPath = path.join(dir, file);
+      const stat = fs.statSync(fullPath);
+      const relPath = path.relative(rootDir, fullPath);
+
+      // Exclude directories and massive log files
+      if (['node_modules', '.git', '.DS_Store', 'dist', 'user and agent convo.md'].some(p => relPath.includes(p))) {
+        return;
+      }
+
+      if (stat.isDirectory()) {
+        results = results.concat(getFilesRecursively(fullPath, rootDir));
+      } else {
+        results.push({
+          path: relPath,
+          name: file,
+          size: stat.size
+        });
+      }
+    });
+  } catch (err) {
+    console.error("Error reading directory:", err);
+  }
+  return results;
+}
+
+// 10. Workspace Files Tree
+app.get('/api/workspace/files', (req, res) => {
+  const files = getFilesRecursively(path.resolve('.'));
+  return res.json({ files });
+});
+
+// 11. Read Workspace File
+app.get('/api/workspace/file', (req, res) => {
+  const { filepath } = req.query;
+  if (!filepath) {
+    return res.status(400).json({ error: "Missing filepath parameter" });
+  }
+
+  const safePath = path.normalize(filepath).replace(/^(\.\.(\/|\\|$))+/, '');
+  const absolutePath = path.resolve(safePath);
+  const rootPath = path.resolve('.');
+
+  if (!absolutePath.startsWith(rootPath)) {
+    return res.status(403).json({ error: "Access denied. Path must be inside project root." });
+  }
+
+  try {
+    if (!fs.existsSync(absolutePath)) {
+      return res.status(404).json({ error: "File not found" });
+    }
+    const content = fs.readFileSync(absolutePath, 'utf8');
+    return res.json({ content });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to read file", details: error.message });
+  }
+});
+
+// 12. AI Agent Workspace Refactoring (Lightweight OpenHands / Devin loop)
+app.post('/api/workspace/refactor', async (req, res) => {
+  const { filepath, prompt } = req.body;
+  if (!filepath || !prompt) {
+    return res.status(400).json({ error: "Missing filepath or prompt in request body" });
+  }
+
+  const safePath = path.normalize(filepath).replace(/^(\.\.(\/|\\|$))+/, '');
+  const absolutePath = path.resolve(safePath);
+  const rootPath = path.resolve('.');
+
+  if (!absolutePath.startsWith(rootPath)) {
+    return res.status(403).json({ error: "Access denied. Path must be inside project root." });
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.status(400).json({ error: "Gemini API key is required to run refactoring agent." });
+  }
+
+  try {
+    console.log(`[OpenHands Agent] Initializing workspace refactoring for: ${filepath}`);
+    console.log(`[OpenHands Agent] Task prompt: "${prompt}"`);
+
+    if (!fs.existsSync(absolutePath)) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    const currentCode = fs.readFileSync(absolutePath, 'utf8');
+
+    // Simulate logs in terminal buffer
+    const logPrefix = `[OpenHands Coding Agent]`;
+    console.log(`${logPrefix} Status: Running...`);
+    console.log(`${logPrefix} Action: Reading ${filepath} (${currentCode.length} bytes)...`);
+    console.log(`${logPrefix} Action: Generating edits using Gemini-2.5-Flash...`);
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const systemInstruction = `You are Devin/OpenHands, an autonomous software engineering agent. Your task is to edit the provided file content based on the user's prompt. 
+Return ONLY the complete updated file content as plain text. Do not wrap it in markdown code blocks, do not explain anything, do not output any markdown formatting before or after the code. Return ONLY the code.`;
+
+    const response = await model.generateContent({
+      contents: [
+        { role: 'user', parts: [{ text: `File: ${filepath}\n\nCurrent Content:\n${currentCode}\n\nUser Request: ${prompt}` }] }
+      ],
+      generationConfig: {
+        systemInstruction: systemInstruction,
+        temperature: 0.1
+      }
+    });
+
+    let newCode = response.response.text();
+    
+    // Clean up code blocks if model wrapped it in markdown
+    if (newCode.trim().startsWith('```')) {
+      newCode = newCode.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
+    }
+
+    if (!newCode || newCode.trim().length === 0) {
+      throw new Error("Refactoring model returned empty code response.");
+    }
+
+    console.log(`${logPrefix} Action: Verifying syntax & writing modifications to disk...`);
+    fs.writeFileSync(absolutePath, newCode, 'utf8');
+    console.log(`${logPrefix} Success: File refactored successfully!`);
+
+    return res.json({
+      success: true,
+      filepath,
+      message: "Refactored successfully",
+      newCode
+    });
+  } catch (error) {
+    console.error("Workspace refactor error:", error);
+    return res.status(500).json({ error: "Failed to execute refactoring cycle", details: error.message });
+  }
 });
 
 // Start Server

@@ -133,11 +133,16 @@ function setupNavigation() {
         setup: 'Setup Agent Persona',
         feed: 'Published Editorial Feed',
         chat: 'Conversational Playground',
+        workspace: 'Autonomous Dev Sandbox',
         logs: 'Process Terminal',
         rejected: 'Decision Audit Log'
       };
       currentTabTitle.textContent = labels[tabName] || 'Dashboard';
       
+      if (tabName === 'workspace') {
+        fetchWorkspaceFiles();
+      }
+
       // Resize Chart.js if switching back to overview (required since container was hidden)
       if (tabName === 'overview' && analyticsChartInstance) {
         setTimeout(() => {
@@ -1118,5 +1123,145 @@ window.ingestScoutedTopic = async function(titleEscaped, urlEscaped, btnElement)
     showToast(error.message || 'Failed to submit topic', 'error');
     btnElement.disabled = false;
     btnElement.textContent = originalText;
+  }
+};
+
+let selectedWorkspaceFilepath = null;
+
+window.fetchWorkspaceFiles = async function() {
+  const treeContainer = document.getElementById('workspace-file-tree');
+  treeContainer.innerHTML = `<div style="padding: 12px; font-size: 12px; color: var(--color-text-muted);">Scanning files...</div>`;
+
+  try {
+    const res = await fetch('/api/workspace/files');
+    if (!res.ok) throw new Error("Failed to fetch workspace files");
+    const data = await res.json();
+
+    treeContainer.innerHTML = '';
+    if (!data.files || data.files.length === 0) {
+      treeContainer.innerHTML = `<div style="padding: 12px; font-size: 12px; color: var(--color-text-muted);">No files found.</div>`;
+      return;
+    }
+
+    data.files.forEach(file => {
+      const fileEl = document.createElement('div');
+      fileEl.className = 'workspace-file-item';
+      fileEl.style.padding = '8px 10px';
+      fileEl.style.borderRadius = '6px';
+      fileEl.style.cursor = 'pointer';
+      fileEl.style.fontSize = '12.5px';
+      fileEl.style.color = '#e2e8f0';
+      fileEl.style.display = 'flex';
+      fileEl.style.justifyContent = 'space-between';
+      fileEl.style.alignItems = 'center';
+      fileEl.style.background = selectedWorkspaceFilepath === file.path ? 'rgba(0, 245, 212, 0.15)' : 'rgba(255, 255, 255, 0.02)';
+      fileEl.style.border = selectedWorkspaceFilepath === file.path ? '1px solid rgba(0, 245, 212, 0.3)' : '1px solid rgba(255, 255, 255, 0.05)';
+      fileEl.style.transition = 'all 0.2s';
+      
+      fileEl.innerHTML = `
+        <span style="font-family: monospace; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; flex: 1;">📄 ${file.path}</span>
+        <span style="font-size: 10px; color: var(--color-text-muted); margin-left: 8px;">${(file.size / 1024).toFixed(1)} KB</span>
+      `;
+
+      fileEl.onclick = () => {
+        selectWorkspaceFile(file.path);
+        // Highlight active tree item
+        document.querySelectorAll('.workspace-file-item').forEach(item => {
+          item.style.background = 'rgba(255, 255, 255, 0.02)';
+          item.style.borderColor = 'rgba(255, 255, 255, 0.05)';
+        });
+        fileEl.style.background = 'rgba(0, 245, 212, 0.15)';
+        fileEl.style.borderColor = 'rgba(0, 245, 212, 0.3)';
+      };
+
+      treeContainer.appendChild(fileEl);
+    });
+
+  } catch (err) {
+    console.error(err);
+    treeContainer.innerHTML = `<div style="padding: 12px; font-size: 12px; color: var(--color-danger);">Failed to load workspace structure.</div>`;
+  }
+};
+
+window.selectWorkspaceFile = async function(filepath) {
+  selectedWorkspaceFilepath = filepath;
+  const title = document.getElementById('workspace-editor-title');
+  const sizeLabel = document.getElementById('workspace-editor-size');
+  const editor = document.getElementById('workspace-code-editor');
+
+  title.textContent = `Reading: ${filepath}...`;
+  editor.value = 'Loading file contents...';
+
+  try {
+    const res = await fetch(`/api/workspace/file?filepath=${encodeURIComponent(filepath)}`);
+    if (!res.ok) throw new Error("Failed to load file contents");
+    const data = await res.json();
+
+    title.textContent = `📄 ${filepath}`;
+    sizeLabel.textContent = `${(data.content.length / 1024).toFixed(2)} KB`;
+    editor.value = data.content;
+  } catch (err) {
+    console.error(err);
+    title.textContent = 'Error loading file';
+    editor.value = 'Failed to load file content. Verify permissions or file path.';
+  }
+};
+
+window.runWorkspaceRefactor = async function() {
+  const promptArea = document.getElementById('workspace-refactor-prompt');
+  const btn = document.getElementById('btn-workspace-refactor');
+  const editor = document.getElementById('workspace-code-editor');
+
+  const prompt = promptArea.value.trim();
+  if (!selectedWorkspaceFilepath) {
+    showToast('Please select a file from the explorer on the left first!', 'warning');
+    return;
+  }
+  if (!prompt) {
+    showToast('Please enter a modification instruction for the Refactor Agent!', 'warning');
+    return;
+  }
+
+  // Set loading state
+  btn.disabled = true;
+  btn.querySelector('span').textContent = 'Coding...';
+  
+  const originalEditorValue = editor.value;
+  editor.value = `[OpenHands Agent Executing Refactoring Loop...]\n\nTask Instruction:\n"${prompt}"\n\nQuerying Gemini-2.5-Flash and performing source modifications...`;
+  showToast('AI Coding Agent initialized. Running refactoring loop...', 'info');
+
+  try {
+    const res = await fetch('/api/workspace/refactor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filepath: selectedWorkspaceFilepath,
+        prompt: prompt
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Refactor operation failed');
+    }
+
+    const data = await res.json();
+    showToast('File edited successfully!', 'success');
+    
+    // Reload file contents
+    editor.value = data.newCode;
+    promptArea.value = '';
+    
+    // Refresh log terminal to show workspace progress
+    if (window.fetchLogs) {
+      await window.fetchLogs();
+    }
+  } catch (err) {
+    console.error(err);
+    showToast(err.message || 'Refactor request failed', 'error');
+    editor.value = originalEditorValue; // Rollback viewer
+  } finally {
+    btn.disabled = false;
+    btn.querySelector('span').textContent = 'Refactor File';
   }
 };
