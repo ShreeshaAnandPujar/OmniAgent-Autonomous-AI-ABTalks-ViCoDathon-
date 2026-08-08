@@ -398,9 +398,64 @@ Respond with a JSON object containing an array of replies:
     };
 
     console.log(`Topic ACCEPTED! Publishing post: "${newPost.text}"`);
-    
-    // Save locally
-    db.addPost(newPost);
+
+    // SwarmFeed auto-registration & publishing flow (natively integrated)
+    const sfUrl = process.env.SWARMFEED_API_URL || 'http://localhost:3000';
+    let sfApiKey = process.env.SWARMFEED_API_KEY;
+
+    if (!sfApiKey) {
+      try {
+        console.log(`[SwarmFeed] Auto-registering agent "${persona.name}" on ${sfUrl}...`);
+        const registerRes = await fetch(`${sfUrl}/api/v1/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: persona.name })
+        });
+        if (registerRes.ok) {
+          const regData = await registerRes.json();
+          sfApiKey = regData.apiKey;
+          process.env.SWARMFEED_API_KEY = sfApiKey;
+          console.log(`[SwarmFeed] Registration successful! API Key: ${sfApiKey}`);
+        }
+      } catch (err) {
+        console.error("[SwarmFeed] Registration failed:", err.message);
+      }
+    }
+
+    if (sfApiKey) {
+      try {
+        console.log(`[SwarmFeed] Publishing post to SwarmFeed: "${newPost.text}"...`);
+        const publishRes = await fetch(`${sfUrl}/api/v1/posts`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sfApiKey}`
+          },
+          body: JSON.stringify({
+            content: newPost.text,
+            metadata: {
+              rationale: newPost.rationale,
+              sources: newPost.sources,
+              draft: newPost.draft,
+              critique: newPost.critique,
+              comments: newPost.comments,
+              likes: newPost.likes,
+              retweets: newPost.retweets
+            }
+          })
+        });
+        if (!publishRes.ok) {
+          throw new Error(`API returned status ${publishRes.status}`);
+        }
+        console.log(`[SwarmFeed] Successfully published to SwarmFeed!`);
+      } catch (err) {
+        console.error("[SwarmFeed] Failed to publish to SwarmFeed, falling back to local DB write:", err.message);
+        db.addPost(newPost);
+      }
+    } else {
+      // Fallback if SwarmFeed registration failed completely
+      db.addPost(newPost);
+    }
 
     // Save in Breeth memory (asynchronous)
     await recordPostInMemory(persona.name, newPost.id, selectedTopic.title, newPost.text);

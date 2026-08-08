@@ -77,13 +77,32 @@ function startBackgroundWorker(intervalMs = 15 * 60 * 1000) {
   console.log(`Background worker started. Running every ${intervalMs / 1000}s`);
 }
 
-// RESTORE background worker on server start if agent is already initialized
+// RESTORE background worker on server start or auto-initialize default configuration
 db.init();
-const existingConfig = db.getConfig();
-if (existingConfig) {
-  console.log(`Restoring active agent session for ${existingConfig.persona.name}`);
-  startBackgroundWorker(existingConfig.runIntervalMs || 15 * 60 * 1000);
+let existingConfig = db.getConfig();
+if (!existingConfig) {
+  existingConfig = {
+    agentId: `agent-${Math.random().toString(36).substring(2, 9)}`,
+    persona: {
+      name: "Ada",
+      domain: "AI Security",
+      description: "Expert in AI safety, LLM security boundaries, and defense-in-depth orchestration."
+    },
+    peerPersona: {
+      name: "Charles",
+      domain: "AI Ethics",
+      description: "Specialist in algorithmic bias, fairness validation, and ethical alignment systems."
+    },
+    runIntervalMs: 15 * 60 * 1000,
+    initializedAt: new Date().toISOString(),
+    lastRunTime: Date.now()
+  };
+  db.saveConfig(existingConfig);
+  console.log("Auto-initialized default agent configuration: Ada (AI Security) & Charles (AI Ethics)");
 }
+
+console.log(`Restoring active agent session for ${existingConfig.persona.name}`);
+startBackgroundWorker(existingConfig.runIntervalMs || 15 * 60 * 1000);
 
 // 1. Initialize Agent
 app.post('/api/agent/init', async (req, res) => {
@@ -163,6 +182,30 @@ app.get('/api/agent/feed', async (req, res) => {
   // Make sure background worker is running (in case node process restarted)
   if (!activeInterval) {
     startBackgroundWorker();
+  }
+
+  const sfUrl = process.env.SWARMFEED_API_URL;
+  if (sfUrl && !sfUrl.includes('localhost:3000') && !sfUrl.includes('127.0.0.1:3000')) {
+    try {
+      console.log(`[SwarmFeed] Proxying feed from external SwarmFeed: ${sfUrl}...`);
+      const response = await fetch(`${sfUrl}/api/v1/feed/for-you`, {
+        headers: process.env.SWARMFEED_API_KEY ? { 'Authorization': `Bearer ${process.env.SWARMFEED_API_KEY}` } : {}
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // SwarmFeed uses content field. Map content back to text if needed.
+        const mappedPosts = (data.posts || []).map(p => ({
+          ...p,
+          text: p.content || p.text,
+          draft: p.metadata?.draft || "",
+          critique: p.metadata?.critique || "",
+          comments: p.metadata?.comments || []
+        }));
+        return res.json({ posts: mappedPosts });
+      }
+    } catch (err) {
+      console.error("[SwarmFeed] Failed to proxy external feed:", err.message);
+    }
   }
 
   const posts = db.getPosts();
@@ -567,6 +610,124 @@ Return ONLY the complete updated file content as plain text. Do not wrap it in m
     console.error("Workspace refactor error:", error);
     return res.status(500).json({ error: "Failed to execute refactoring cycle", details: error.message });
   }
+});
+
+// ==========================================
+// SwarmFeed API v1 Endpoints (Integrated)
+// ==========================================
+
+// 1. Register agent on SwarmFeed
+app.post('/api/v1/register', (req, res) => {
+  const { name } = req.body;
+  if (!name) {
+    return res.status(400).json({ error: "Missing agent name" });
+  }
+  const cleanName = name.replace(/\s+/g, '');
+  const apiKey = `sf-key-${cleanName.toLowerCase()}-${Math.random().toString(36).substring(2, 7)}`;
+  const agentId = `agent-${cleanName.toLowerCase()}`;
+  const claimToken = `claim-${Math.random().toString(36).substring(2, 9)}`;
+
+  const config = db.getConfig();
+  if (config) {
+    config.swarmFeedKey = apiKey;
+    config.swarmFeedAgentId = agentId;
+    config.swarmFeedClaimToken = claimToken;
+    db.saveConfig(config);
+  }
+
+  console.log(`[SwarmFeed] Auto-registered agent "${name}" with ID: ${agentId}`);
+  return res.json({ apiKey, agentId, claimToken });
+});
+
+// 2. Create post on SwarmFeed
+app.post('/api/v1/posts', (req, res) => {
+  const { content, channelId, parentId, quotedPostId, metadata } = req.body;
+
+  if (!content) {
+    return res.status(400).json({ error: "Post content is required" });
+  }
+
+  const config = db.getConfig();
+  const agentName = config ? config.persona.name : 'Ada';
+  const agentDomain = config ? config.persona.domain : 'AI Security';
+
+  const newPost = {
+    id: `p-${Date.now()}`,
+    createdAt: new Date().toISOString(),
+    text: content,
+    content: content,
+    author: {
+      id: config ? config.swarmFeedAgentId || 'agent-default' : 'agent-default',
+      name: agentName,
+      username: `@${agentName.replace(/\s+/g, '')}`
+    },
+    rationale: metadata?.rationale || "SwarmFeed post broadcasted",
+    sources: metadata?.sources || [],
+    draft: metadata?.draft || "",
+    critique: metadata?.critique || "",
+    comments: metadata?.comments || [],
+    likes: metadata?.likes || Math.floor(Math.random() * 20) + 5,
+    retweets: metadata?.retweets || Math.floor(Math.random() * 8) + 2,
+    likeCount: metadata?.likes || Math.floor(Math.random() * 20) + 5,
+    replyCount: metadata?.comments ? metadata.comments.length : 0,
+    repostCount: metadata?.retweets || Math.floor(Math.random() * 8) + 2,
+    channelId,
+    parentId,
+    quotedPostId
+  };
+
+  db.addPost(newPost);
+  console.log(`[SwarmFeed] Broadcaster created post: "${content.substring(0, 50)}..."`);
+  return res.status(201).json(newPost);
+});
+
+// 3. For You feed (personalized)
+app.get('/api/v1/feed/for-you', (req, res) => {
+  const posts = db.getPosts();
+  return res.json({ posts });
+});
+
+// 4. Trending feed
+app.get('/api/v1/feed/trending', (req, res) => {
+  const posts = db.getPosts();
+  return res.json({ posts });
+});
+
+// 5. Following feed
+app.get('/api/v1/feed/following', (req, res) => {
+  const posts = db.getPosts();
+  return res.json({ posts });
+});
+
+// 6. Get single post
+app.get('/api/v1/posts/:postId', (req, res) => {
+  const posts = db.getPosts();
+  const post = posts.find(p => p.id === req.params.postId);
+  if (!post) {
+    return res.status(404).json({ error: "Post not found" });
+  }
+  return res.json(post);
+});
+
+// 7. Get post replies
+app.get('/api/v1/posts/:postId/replies', (req, res) => {
+  const posts = db.getPosts();
+  const parentPost = posts.find(p => p.id === req.params.postId);
+  if (!parentPost) {
+    return res.status(404).json({ error: "Post not found" });
+  }
+  const replies = (parentPost.comments || []).map((c, index) => ({
+    id: `${parentPost.id}-reply-${index}`,
+    createdAt: parentPost.createdAt,
+    text: c.text,
+    content: c.text,
+    author: {
+      name: c.username,
+      username: c.username
+    },
+    parentId: parentPost.id
+  }));
+  return res.json({ posts: replies });
 });
 
 // Start Server
