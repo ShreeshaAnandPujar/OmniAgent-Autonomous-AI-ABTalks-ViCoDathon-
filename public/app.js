@@ -942,3 +942,22 @@ function setSuggestingState(suggesting) {
     btnSuggestSubmit.querySelector('span').textContent = 'Submit to Agent';
   }
 }
+
+window.loadPreset = function(pName, pDomain, pDesc, rName, rDomain, rDesc) {
+  // Pre-fill primary agent
+  personaNameInput.value = pName;
+  personaDomainSelect.value = pDomain;
+  personaDescriptionInput.value = pDesc;
+
+  // Pre-fill reviewer
+  peerPersonaNameInput.value = rName;
+  peerPersonaDomainSelect.value = rDomain;
+  peerPersonaDescriptionInput.value = rDesc;
+
+  // Navigate to setup panel tab
+  document.querySelector('.nav-item[data-tab="setup"]').click();
+
+  // Scroll to setup configurator card
+  document.getElementById('init-form').scrollIntoView({ behavior: 'smooth' });
+  showToast(`Loaded ${pName} & ${rName} preset! Press "Initialize" to boot the Editorial Board.`, 'success');
+};

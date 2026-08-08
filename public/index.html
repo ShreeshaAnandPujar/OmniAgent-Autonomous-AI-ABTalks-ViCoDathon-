@@ -115,7 +115,26 @@
               <div class="overview-status-wrap" id="overview-status-uninitialized">
                 <div class="status-placeholder">
                   <h3>No Active Persona</h3>
-                  <p>Navigate to the "Persona Setup" tab on the left to configure your agent and start processing feeds.</p>
+                  <p style="margin-bottom: 24px;">Navigate to the "Persona Setup" tab on the left to manually configure, or select one of our curated hackathon presets below to launch your multi-agent editorial board instantly:</p>
+                  
+                  <div class="presets-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; width: 100%; text-align: left; margin-top: 8px;">
+                    
+                    <div class="preset-card glass-panel" onclick="loadPreset('Ada', 'AI Security', 'Professional, analytical, and direct AI security researcher focused on boundary defense.', 'ByteWeaver', 'Machine Learning', 'Constructive machine learning engineering expert focused on performance benchmarks and algorithmic latency.')" style="cursor: pointer; padding: 16px; border-radius: 12px; border: 1px solid rgba(0, 245, 212, 0.25); background: rgba(0, 245, 212, 0.03); transition: transform 0.2s ease, background 0.2s ease;">
+                      <h4 style="color: var(--accent-light); margin-bottom: 6px; font-size: 13.5px; font-weight: 700;">🛡️ AI Security Board</h4>
+                      <p style="font-size: 11.5px; line-height: 1.45; color: var(--color-text-muted); margin: 0;">Ada (AI Security) meets ByteWeaver (ML Optimization) to critique context threats vs. performance overhead.</p>
+                    </div>
+
+                    <div class="preset-card glass-panel" onclick="loadPreset('TechInsight', 'AI Product Analyst', 'Technical product analyst examining scalability, pricing, market fit, and end-user ROI.', 'EthicsGuard', 'AI Ethics', 'Policy and AI ethics advocate focused on bias mitigation, privacy protocols, and regulatory compliance.')" style="cursor: pointer; padding: 16px; border-radius: 12px; border: 1px solid rgba(131, 56, 236, 0.25); background: rgba(131, 56, 236, 0.03); transition: transform 0.2s ease, background 0.2s ease;">
+                      <h4 style="color: #9d4edd; margin-bottom: 6px; font-size: 13.5px; font-weight: 700;">⚖️ AI Ethics & ROI</h4>
+                      <p style="font-size: 11.5px; line-height: 1.45; color: var(--color-text-muted); margin: 0;">TechInsight (Product ROI) debates EthicsGuard (AI Ethics) on monetization vs. alignment and bias risks.</p>
+                    </div>
+
+                    <div class="preset-card glass-panel" onclick="loadPreset('Nexus', 'Robotics', 'Advanced hardware architect designing neural controllers and physical actuation loops.', 'OpenCore', 'Open Source', 'Open-source software engineer maintaining repositories and advocating for transparent libraries.')" style="cursor: pointer; padding: 16px; border-radius: 12px; border: 1px solid rgba(255, 71, 126, 0.25); background: rgba(255, 71, 126, 0.03); transition: transform 0.2s ease, background 0.2s ease;">
+                      <h4 style="color: var(--color-danger); margin-bottom: 6px; font-size: 13.5px; font-weight: 700;">🤖 Robotics & Open Source</h4>
+                      <p style="font-size: 11.5px; line-height: 1.45; color: var(--color-text-muted); margin: 0;">Nexus (Hardware design) debates OpenCore (transparent libraries) on physical neural controllers.</p>
+                    </div>
+
+                  </div>
                 </div>
               </div>
               
