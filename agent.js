@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { db } from "./db.js";
-import { checkMemoryForTopic, recordPostInMemory } from "./breeth.js";
+import { checkMemoryForTopic, recordPostInMemory, searchRelatedMemories } from "./breeth.js";
 
 // Helper to clean up HTML/CDATA entities
 function cleanText(str) {
@@ -198,85 +198,188 @@ export async function runAgentCycle() {
     return;
   }
 
-  await processSingleTopic(persona, selectedTopic);
+  await processSingleTopic(persona, peerPersona, selectedTopic);
 }
 
-export async function processSingleTopic(persona, selectedTopic) {
+export async function processSingleTopic(persona, peerPersona, selectedTopic) {
   console.log(`Evaluating discovered topic: "${selectedTopic.title}"`);
 
-  // 2. Editorial Judgment & Persona writing
-  let decision = null;
+  // 1. Context-Aware RAG (Retrieve past memories from Breeth MCP graph)
+  let pastMemoriesContext = "";
+  try {
+    const searchTerms = selectedTopic.title.split(' ')
+      .filter(w => w.length > 4)
+      .slice(0, 3)
+      .join(' ')
+      .replace(/[^a-zA-Z0-9 ]/g, "");
+    
+    if (searchTerms) {
+      console.log(`RAG: Retrieving memories for query: "${searchTerms}"...`);
+      const memories = await searchRelatedMemories(searchTerms);
+      if (memories) {
+        pastMemoriesContext = `\n[Episodic Memory RAG context found in Breeth graph]:\n${memories}\n(Align or reference this past context if relevant to maintain continuity.)`;
+      }
+    }
+  } catch (err) {
+    console.error("RAG memory search failed:", err.message);
+  }
+
+  let decision = {
+    isWorthPublishing: false,
+    editorialRationale: "",
+    postText: "",
+    draftPostText: "",
+    peerCritique: "",
+    comments: []
+  };
+
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (apiKey) {
     try {
-      console.log("Using Gemini API with Self-Reflection loop for editorial judgment...");
       const genAI = new GoogleGenerativeAI(apiKey);
+      const candidateModels = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+      let selectedModel = null;
+      let lastError = null;
 
-      const prompt = `You are ${persona.name}, an expert persona in the domain of "${persona.domain}".
-Your writing style guidelines, tone, and character rules: "${persona.description || 'Professional, analytical, and direct.'}"
-Your job is to discover topics, make editorial decisions on what is worth publishing, and write high-quality posts.
+      // Find a working model
+      for (const modelName of candidateModels) {
+        try {
+          console.log(`Checking model availability: ${modelName}...`);
+          const testModel = genAI.getGenerativeModel({ model: modelName });
+          await testModel.generateContent({
+            contents: [{ role: 'user', parts: [{ text: "ping" }] }]
+          });
+          selectedModel = testModel;
+          console.log(`Model selected: ${modelName}`);
+          break;
+        } catch (err) {
+          lastError = err;
+        }
+      }
 
-Here is a topic you just discovered:
+      if (!selectedModel) {
+        throw lastError || new Error("All candidate Gemini models failed availability checks.");
+      }
+
+      // STAGE 1: Editorial Evaluation & Primary Agent Draft
+      console.log(`[Stage 1] Primary Agent ${persona.name} evaluating topic & writing draft...`);
+      const stage1Prompt = `You are ${persona.name}, an expert persona in the domain of "${persona.domain}".
+Style guideline: "${persona.description || 'Professional, analytical, and direct.'}"
+${pastMemoriesContext}
+
+Evaluate this discovered topic:
 Title: "${selectedTopic.title}"
 URL: "${selectedTopic.url}"
 Summary/Context: "${selectedTopic.summary || 'No summary available.'}"
 
-First, evaluate if this topic is highly relevant to your domain ("${persona.domain}") and meets your professional standards. Be selective: reject topics that are too generic, off-topic, or low-quality.
-
-If isWorthPublishing is true, you must write a social media post. Perform a self-reflection critique step to write the absolute best post:
-1. Draft an initial post.
-2. Critique the draft against your guidelines: does it contain emojis? (none allowed), does it contain hashtags? (none allowed), is it too generic? does it capture your voice correctly?
-3. Polish and write the final post incorporating your critique.
-
-Respond with a JSON object in this exact schema (no additional markdown wrap, just pure JSON):
+Determine if it is highly relevant and worth publishing. Respond with a JSON object in this exact schema:
 {
   "isWorthPublishing": true or false,
-  "editorialRationale": "Detailed rationale explaining why this topic was selected or rejected, why it is relevant now, and why it fits your persona.",
-  "draftPostText": "Initial drafted post (if isWorthPublishing is true, otherwise empty).",
-  "selfCritique": "Critique checking if the draft violates guidelines like containing emojis/hashtags, deviating from tone, or being too generic.",
-  "postText": "Refined and polished final post incorporating the selfCritique feedback (no emojis, no hashtags, 1-3 sentences)."
+  "editorialRationale": "Your rationale for selecting or rejecting this topic.",
+  "draftPost": "If isWorthPublishing is true, draft a short commentary (1-2 sentences) in your voice. Avoid hashtags and emojis. If false, leave empty."
 }`;
 
-      const candidateModels = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
-      let lastError = null;
+      const stage1Result = await selectedModel.generateContent({
+        contents: [{ role: 'user', parts: [{ text: stage1Prompt }] }],
+        generationConfig: { responseMimeType: "application/json" }
+      });
+      const stage1Data = JSON.parse(stage1Result.response.text());
 
-      for (const modelName of candidateModels) {
-        try {
-          console.log(`Calling Gemini API using model: ${modelName}...`);
-          const model = genAI.getGenerativeModel({ model: modelName });
-          const result = await model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { responseMimeType: "application/json" }
-          });
+      if (stage1Data.isWorthPublishing) {
+        decision.isWorthPublishing = true;
+        decision.editorialRationale = stage1Data.editorialRationale;
+        decision.draftPostText = stage1Data.draftPost;
 
-          const responseText = result.response.text();
-          decision = JSON.parse(responseText);
-          console.log(`Successfully completed Gemini call using model: ${modelName}`);
-          
-          if (decision.isWorthPublishing) {
-            console.log(`Self-Reflection Loop details:`);
-            console.log(`- Draft: "${decision.draftPostText}"`);
-            console.log(`- Critique: "${decision.selfCritique}"`);
-            console.log(`- Final Post: "${decision.postText}"`);
-          }
-          break;
-        } catch (error) {
-          console.error(`Failed with model ${modelName}:`, error.message);
-          lastError = error;
-        }
+        // STAGE 2: Peer Reviewer Critique & Debate
+        console.log(`[Stage 2] Peer Reviewer Agent ${peerPersona.name} critiquing draft...`);
+        const stage2Prompt = `You are ${peerPersona.name}, a peer reviewer persona in the domain of "${peerPersona.domain}".
+Style guideline: "${peerPersona.description || 'Analytical and critical.'}"
+
+Analyze this draft editorial post written by your colleague:
+Draft Post: "${decision.draftPostText}"
+Topic Title: "${selectedTopic.title}"
+
+Provide a professional critique or debating point (1-2 sentences) from your specific perspective as an expert in "${peerPersona.domain}". Challenge the draft if it overlooks key aspects, or suggest how it can be refined to be more insightful.
+Respond with a JSON object in this exact schema:
+{
+  "peerCritique": "Your constructive critique or debating point."
+}`;
+
+        const stage2Result = await selectedModel.generateContent({
+          contents: [{ role: 'user', parts: [{ text: stage2Prompt }] }],
+          generationConfig: { responseMimeType: "application/json" }
+        });
+        const stage2Data = JSON.parse(stage2Result.response.text());
+        decision.peerCritique = stage2Data.peerCritique;
+
+        // STAGE 3: Final Refinement & Polishing
+        console.log(`[Stage 3] Primary Agent ${persona.name} refining final post...`);
+        const stage3Prompt = `You are ${persona.name} (${persona.domain}). 
+Your colleague ${peerPersona.name} (${peerPersona.domain}) has critiqued your draft.
+Critique: "${decision.peerCritique}"
+Your Original Draft: "${decision.draftPostText}"
+
+Refine your draft incorporating their feedback into a final, polished editorial post.
+Guidelines:
+- Keep it to 1-3 sentences.
+- Do NOT use emojis or hashtags.
+- Keep it highly professional and insightful.
+
+Respond with a JSON object in this exact schema:
+{
+  "postText": "Your final refined and polished post text."
+}`;
+
+        const stage3Result = await selectedModel.generateContent({
+          contents: [{ role: 'user', parts: [{ text: stage3Prompt }] }],
+          generationConfig: { responseMimeType: "application/json" }
+        });
+        const stage3Data = JSON.parse(stage3Result.response.text());
+        decision.postText = stage3Data.postText;
+
+        // STAGE 4: AI Social Discussions Generation
+        console.log(`[Stage 4] Generating dynamic AI social replies...`);
+        const stage4Prompt = `Generate 2-3 realistic replies/comments from different fictional Twitter/X handles (e.g. @CodeSlinger, @TechLead, @AIOptimist) reacting to this post:
+Post: "${decision.postText}"
+
+Respond with a JSON object containing an array of replies:
+{
+  "replies": [
+    {"username": "@handle", "text": "A brief comment reacting to the post (agreeing, questioning, or adding perspective)."}
+  ]
+}`;
+
+        const stage4Result = await selectedModel.generateContent({
+          contents: [{ role: 'user', parts: [{ text: stage4Prompt }] }],
+          generationConfig: { responseMimeType: "application/json" }
+        });
+        const stage4Data = JSON.parse(stage4Result.response.text());
+        decision.comments = stage4Data.replies || [];
+
+        console.log(`Multi-agent review process completed successfully:`);
+        console.log(`- Draft: "${decision.draftPostText}"`);
+        console.log(`- Critique: "${decision.peerCritique}"`);
+        console.log(`- Final Post: "${decision.postText}"`);
+      } else {
+        decision.editorialRationale = stage1Data.editorialRationale;
       }
 
-      if (!decision) {
-        throw lastError || new Error("All candidate Gemini models failed");
-      }
     } catch (error) {
-      console.error("Gemini API call failed, falling back to local engine:", error.message);
+      console.error("Gemini Multi-Agent execution failed, falling back to local engine:", error.message);
       decision = runLocalEditorialDecision(persona, selectedTopic);
+      decision.comments = [
+        { username: "@DevAdvocate", text: "Interesting perspective, keeping an eye on this." },
+        { username: "@TechTracker", text: "Glad to see this covered. Matches what we are seeing." }
+      ];
     }
   } else {
     console.log("No GEMINI_API_KEY found. Running local rule-based fallback engine...");
     decision = runLocalEditorialDecision(persona, selectedTopic);
+    decision.comments = [
+      { username: "@DevAdvocate", text: "Interesting perspective, keeping an eye on this." },
+      { username: "@TechTracker", text: "Glad to see this covered. Matches what we are seeing." }
+    ];
   }
 
   // 3. Process the Decision
@@ -286,7 +389,12 @@ Respond with a JSON object in this exact schema (no additional markdown wrap, ju
       createdAt: new Date().toISOString(),
       text: decision.postText,
       rationale: decision.editorialRationale,
-      sources: [selectedTopic.url]
+      sources: [selectedTopic.url],
+      draft: decision.draftPostText,
+      critique: decision.peerCritique,
+      comments: decision.comments,
+      likes: Math.floor(Math.random() * 20) + 5,
+      retweets: Math.floor(Math.random() * 8) + 2
     };
 
     console.log(`Topic ACCEPTED! Publishing post: "${newPost.text}"`);

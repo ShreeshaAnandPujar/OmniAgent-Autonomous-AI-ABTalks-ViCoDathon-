@@ -85,10 +85,10 @@ if (existingConfig) {
 
 // 1. Initialize Agent
 app.post('/api/agent/init', async (req, res) => {
-  const { persona } = req.body;
+  const { persona, peerPersona } = req.body;
   
-  if (!persona || !persona.name || !persona.domain) {
-    return res.status(400).json({ error: "Missing required fields: persona.name and persona.domain" });
+  if (!persona || !persona.name || !persona.domain || !peerPersona || !peerPersona.name || !peerPersona.domain) {
+    return res.status(400).json({ error: "Missing required fields for Primary and Peer Reviewer personas." });
   }
 
   // Clear previous data for a clean test/evaluation session
@@ -96,6 +96,7 @@ app.post('/api/agent/init', async (req, res) => {
   const config = {
     agentId,
     persona,
+    peerPersona,
     initializedAt: new Date().toISOString(),
     lastRunTime: Date.now()
   };
@@ -109,7 +110,7 @@ app.post('/api/agent/init', async (req, res) => {
     fs.default.writeFileSync('db.json', JSON.stringify(freshDb, null, 2), 'utf8');
   });
 
-  console.log(`Initialized new agent ${persona.name} (${persona.domain}) with ID ${agentId}`);
+  console.log(`Initialized new agent ${persona.name} with Peer Reviewer ${peerPersona.name} (${agentId})`);
 
   // Start background periodic task
   startBackgroundWorker();
@@ -307,7 +308,7 @@ app.post('/api/agent/suggest', async (req, res) => {
       return res.status(400).json({ error: "This topic or URL has already been processed by the agent." });
     }
 
-    const decision = await processSingleTopic(config.persona, { 
+    const decision = await processSingleTopic(config.persona, config.peerPersona, { 
       title, 
       url, 
       summary: "Suggested directly by the user on the control panel." 

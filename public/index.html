@@ -147,9 +147,15 @@
                   </div>
                 </div>
                 
-                <div class="detail-box-full">
-                  <span class="lbl">Character Profile & Writing Tone</span>
-                  <span class="val" id="status-description">-</span>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px;">
+                  <div class="detail-box-full" style="margin-top: 0;">
+                    <span class="lbl" style="color: var(--accent-light); font-weight: 600;">Primary Agent Character Profile</span>
+                    <span class="val" id="status-description">-</span>
+                  </div>
+                  <div class="detail-box-full" style="margin-top: 0; border-left: 1px solid rgba(255,255,255,0.06); padding-left: 16px;">
+                    <span class="lbl" style="color: var(--accent-light); font-weight: 600;">Peer Reviewer Profile (<span id="status-peer-name">-</span>)</span>
+                    <span class="val" id="status-peer-description">-</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -223,8 +229,35 @@
                   <textarea id="persona-description" rows="4" placeholder="e.g. Critical and technical AI researcher. Writes concisely, avoids corporate jargon, evaluates items with high selective standards..." required></textarea>
                 </div>
 
-                <button type="submit" class="btn btn-primary" id="btn-initialize">
-                  <span>Initialize & Launch Agent</span>
+                <div class="form-divider" style="margin: 24px 0 16px 0; border-top: 1px dashed rgba(255,255,255,0.15);"></div>
+                <h3 style="font-size: 15px; margin-bottom: 8px; color: var(--accent-light);">Peer Reviewer Configurator</h3>
+                <p class="card-desc" style="margin-bottom: 16px;">Configure the secondary persona that critiques and refines your primary agent's draft comments.</p>
+
+                <div class="form-group">
+                  <label for="peer-persona-name">Peer Reviewer Name</label>
+                  <input type="text" id="peer-persona-name" placeholder="e.g. ByteWeaver, EthicsGuard" required>
+                </div>
+                
+                <div class="form-group">
+                  <label for="peer-persona-domain">Peer Reviewer Domain</label>
+                  <select id="peer-persona-domain" required>
+                    <option value="" disabled selected>Select a domain...</option>
+                    <option value="AI Security">AI Security</option>
+                    <option value="AI Ethics">AI Ethics</option>
+                    <option value="Machine Learning">Machine Learning</option>
+                    <option value="Robotics">Robotics</option>
+                    <option value="AI Product Analyst">AI Product Analyst</option>
+                    <option value="Open Source">Open Source</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="peer-persona-description">Character Profile & Review Tone</label>
+                  <textarea id="peer-persona-description" rows="4" placeholder="e.g. Technical ML expert focused on performance benchmarks and algorithmic bias. Offers constructive critiques to improve technical precision..." required></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="btn-initialize" style="margin-top: 16px;">
+                  <span>Initialize & Launch Editorial Board</span>
                 </button>
               </form>
             </div>

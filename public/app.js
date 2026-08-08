@@ -23,6 +23,10 @@ const personaNameInput = document.getElementById('persona-name');
 const personaDomainSelect = document.getElementById('persona-domain');
 const personaDescriptionInput = document.getElementById('persona-description');
 
+const peerPersonaNameInput = document.getElementById('peer-persona-name');
+const peerPersonaDomainSelect = document.getElementById('peer-persona-domain');
+const peerPersonaDescriptionInput = document.getElementById('peer-persona-description');
+
 // Active status elements
 const statusName = document.getElementById('status-name');
 const statusDomain = document.getElementById('status-domain');
@@ -30,6 +34,8 @@ const statusId = document.getElementById('status-id');
 const statusInitialized = document.getElementById('status-initialized');
 const statusLastRun = document.getElementById('status-last-run');
 const statusDescription = document.getElementById('status-description');
+const statusPeerName = document.getElementById('status-peer-name');
+const statusPeerDescription = document.getElementById('status-peer-description');
 const statusCountdown = document.getElementById('status-countdown');
 
 // Stats Counters & badges
@@ -207,6 +213,8 @@ async function checkStatus() {
       statusInitialized.textContent = new Date(data.config.initializedAt).toLocaleString();
       statusLastRun.textContent = data.config.lastRunTime ? new Date(data.config.lastRunTime).toLocaleString() : 'Never';
       statusDescription.textContent = data.config.persona.description || 'N/A';
+      statusPeerName.textContent = data.config.peerPersona ? data.config.peerPersona.name : '-';
+      statusPeerDescription.textContent = data.config.peerPersona ? data.config.peerPersona.description : '-';
       
       lastCycleTime = data.config.lastRunTime || Date.now();
       
@@ -401,42 +409,158 @@ function renderFeed(posts) {
   feedList.classList.remove('hidden');
   
   feedList.innerHTML = posts.map(post => {
-    const formattedDate = new Date(post.createdAt).toLocaleString();
-    const sourcesHtml = (post.sources || []).map(src => `
-      <a href="${src}" target="_blank" class="source-link">
-        Source Link
-        <svg style="width:12px;height:12px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-        </svg>
-      </a>
-    `).join(' ');
-
+    const formattedDate = new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     const escapedText = post.text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    
+    // Dynamic avatar color based on name length/content
+    const colors = ['#00f5d4', '#7000ff', '#ff007f', '#3a86f7', '#ffbe0b', '#8338ec'];
+    const charCode = (post.text || '').charCodeAt(0) || 0;
+    const avatarColor = colors[charCode % colors.length];
+
+    // Comments HTML
+    const commentsListHtml = (post.comments || []).map(comment => `
+      <div class="x-comment-item">
+        <div class="x-comment-avatar" style="background: rgba(255,255,255,0.08); color: var(--accent-light); font-size: 10px;">
+          ${comment.username.substring(1, 3).toUpperCase()}
+        </div>
+        <div class="x-comment-body">
+          <div class="x-comment-user-info">
+            <span class="x-comment-user-name">${comment.username}</span>
+            <span class="x-comment-user-handle">${comment.username.toLowerCase()}</span>
+          </div>
+          <p class="x-comment-text">${comment.text}</p>
+        </div>
+      </div>
+    `).join('');
 
     return `
-      <div class="feed-item">
-        <div class="feed-item-header">
-          <span class="feed-item-time">
-            ${formattedDate}
-            <button class="btn-audio" onclick="speakText('${escapedText}')" title="Listen to post">
-              <svg style="width:13px;height:13px;vertical-align:middle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
-              </svg>
-            </button>
-          </span>
+      <div class="x-post-card glass-panel" id="post-${post.id}">
+        <!-- Post Header -->
+        <div class="x-post-header">
+          <div class="x-avatar" style="background: ${avatarColor};">
+            ${statusName.textContent ? statusName.textContent[0].toUpperCase() : 'A'}
+          </div>
+          <div class="x-user-info">
+            <div class="x-user-row">
+              <span class="x-name">${statusName.textContent || 'Agent'}</span>
+              <span class="x-badge">
+                <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;color:#1d9bf0;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+              </span>
+              <span class="x-handle">@${(statusName.textContent || 'Agent').replace(/\s+/g, '')}</span>
+              <span class="x-dot">·</span>
+              <span class="x-date">${formattedDate}</span>
+            </div>
+            <span class="x-domain-tag badge-domain">${statusDomain.textContent || 'AI'}</span>
+          </div>
         </div>
-        <p class="feed-item-content">${post.text}</p>
-        <div class="feed-item-meta">
-          <span class="meta-label">Rationale:</span>
-          <span class="meta-text">${post.rationale || 'N/A'}</span>
+
+        <!-- Post Content -->
+        <div class="x-post-body">
+          <p class="x-text">${post.text}</p>
+          
+          <!-- Sources if present -->
+          ${(post.sources || []).map(src => `
+            <a href="${src}" target="_blank" class="x-source-preview">
+              <div class="x-source-icon">🔗</div>
+              <div class="x-source-text">${src.replace('https://', '').substring(0, 45)}...</div>
+            </a>
+          `).join('')}
+
+          <!-- Peer Debate Box (Collapsible) -->
+          ${post.critique ? `
+            <div class="x-debate-box">
+              <div class="x-debate-header" onclick="toggleDebateBox('${post.id}')">
+                <span class="x-debate-title">🛡️ Peer Review Debate & Self-Critique</span>
+                <span class="x-debate-toggle-icon" id="debate-toggle-${post.id}">▼</span>
+              </div>
+              <div class="x-debate-content hidden" id="debate-content-${post.id}">
+                <div class="x-debate-step">
+                  <span class="lbl-step">Stage 1: Original Draft (${statusName.textContent})</span>
+                  <p class="val-step">${post.draft || 'N/A'}</p>
+                </div>
+                <div class="x-debate-step review-step">
+                  <span class="lbl-step">Stage 2: Peer Critique (${statusPeerName.textContent})</span>
+                  <p class="val-step">${post.critique}</p>
+                </div>
+                <div class="x-debate-step final-step">
+                  <span class="lbl-step">Stage 3: Polished Publication</span>
+                  <p class="val-step">${post.text}</p>
+                </div>
+              </div>
+            </div>
+          ` : ''}
         </div>
-        <div class="feed-item-sources">
-          ${sourcesHtml}
+
+        <!-- Post Action Bar -->
+        <div class="x-action-bar">
+          <!-- Comments Toggle -->
+          <button class="x-action-btn btn-comments" onclick="toggleComments('${post.id}')" title="Show Discussion">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.92 1.78c-.082.095-.054.233.054.285a10.094 10.094 0 0 0 3.82.724c.216 0 .43-.01.64-.03a1.137 1.137 0 0 0 .58-.223Z"/></svg>
+            <span class="count">${(post.comments || []).length}</span>
+          </button>
+
+          <!-- Likes -->
+          <button class="x-action-btn btn-likes" onclick="incrementLikes('${post.id}')" title="Like">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"/></svg>
+            <span class="count" id="likes-count-${post.id}">${post.likes || 0}</span>
+          </button>
+
+          <!-- Retweets -->
+          <button class="x-action-btn btn-retweets" onclick="incrementRetweets('${post.id}')" title="Retweet">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+            <span class="count" id="retweets-count-${post.id}">${post.retweets || 0}</span>
+          </button>
+
+          <!-- Listen (Audio) -->
+          <button class="x-action-btn btn-listen" onclick="speakText('${escapedText}')" title="Listen to post">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" /></svg>
+          </button>
+        </div>
+
+        <!-- Comments Container (Hidden by default) -->
+        <div class="x-comments-section hidden" id="comments-section-${post.id}">
+          <h4 class="x-comments-title">Discussion Thread</h4>
+          <div class="x-comments-list">
+            ${commentsListHtml || '<p class="text-muted" style="font-size: 12px; padding-left: 12px;">No comments yet.</p>'}
+          </div>
         </div>
       </div>
     `;
   }).join('');
 }
+
+window.toggleDebateBox = function(id) {
+  const content = document.getElementById(`debate-content-${id}`);
+  const icon = document.getElementById(`debate-toggle-${id}`);
+  if (content.classList.contains('hidden')) {
+    content.classList.remove('hidden');
+    icon.textContent = '▲';
+  } else {
+    content.classList.add('hidden');
+    icon.textContent = '▼';
+  }
+};
+
+window.toggleComments = function(id) {
+  const sect = document.getElementById(`comments-section-${id}`);
+  if (sect.classList.contains('hidden')) {
+    sect.classList.remove('hidden');
+  } else {
+    sect.classList.add('hidden');
+  }
+};
+
+window.incrementLikes = function(id) {
+  const elem = document.getElementById(`likes-count-${id}`);
+  let count = parseInt(elem.textContent);
+  elem.textContent = count + 1;
+};
+
+window.incrementRetweets = function(id) {
+  const elem = document.getElementById(`retweets-count-${id}`);
+  let count = parseInt(elem.textContent);
+  elem.textContent = count + 1;
+};
 
 // Render Rejected Log
 function renderRejected(rejected) {
@@ -467,20 +591,25 @@ async function handleInitialize(e) {
   const name = personaNameInput.value.trim();
   const domain = personaDomainSelect.value;
   const description = personaDescriptionInput.value.trim();
+
+  const peerName = peerPersonaNameInput.value.trim();
+  const peerDomain = peerPersonaDomainSelect.value;
+  const peerDescription = peerPersonaDescriptionInput.value.trim();
   
-  if (!name || !domain || !description) {
-    showToast('Please fill out all fields', 'error');
+  if (!name || !domain || !description || !peerName || !peerDomain || !peerDescription) {
+    showToast('Please fill out all fields for both personas', 'error');
     return;
   }
   
   setInitializingState(true);
-  showToast('Initializing agent (running first cycle)...', 'info');
+  showToast('Initializing Editorial Board (running first debate cycle)...', 'info');
   try {
     const res = await fetch('/api/agent/init', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        persona: { name, domain, description }
+        persona: { name, domain, description },
+        peerPersona: { name: peerName, domain: peerDomain, description: peerDescription }
       })
     });
     
@@ -493,13 +622,17 @@ async function handleInitialize(e) {
     personaNameInput.value = '';
     personaDomainSelect.value = '';
     personaDescriptionInput.value = '';
+
+    peerPersonaNameInput.value = '';
+    peerPersonaDomainSelect.value = '';
+    peerPersonaDescriptionInput.value = '';
     
-    showToast('Agent session launched!', 'success');
+    showToast('Editorial Board launched!', 'success');
     
     // Clear chat logs
     chatMessagesBody.innerHTML = `
       <div class="chat-bubble agent-bubble">
-        Hello! I am initialized and ready to discuss tech trends and insights. Ask me anything!
+        Hello! We are initialized and ready to discuss tech trends and insights. Ask us anything!
       </div>
     `;
     

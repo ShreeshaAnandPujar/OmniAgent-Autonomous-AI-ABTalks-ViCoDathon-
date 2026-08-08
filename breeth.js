@@ -97,3 +97,29 @@ export async function recordPostInMemory(agentName, postId, topic, text) {
     console.error("Error recording post to Breeth memory:", error);
   }
 }
+
+export async function searchRelatedMemories(query) {
+  const mcpClient = await getBreethClient();
+  if (!mcpClient) return "";
+
+  try {
+    console.log(`Querying Breeth graph for past posts related to: "${query}"...`);
+    const response = await mcpClient.callTool({
+      name: "search_graph",
+      arguments: {
+        query: `posts related to ${query}`,
+        limit: 2
+      }
+    });
+
+    if (response && response.content) {
+      const textContent = response.content.map(c => c.text || '').join('\n').trim();
+      if (textContent) {
+        return textContent;
+      }
+    }
+  } catch (error) {
+    console.error("Error retrieving past memories for RAG:", error);
+  }
+  return "";
+}
