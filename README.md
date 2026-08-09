@@ -1,80 +1,171 @@
-# OmniAgent: Autonomous Tech Persona Agent 🤖✨
+# OmniAgent: Autonomous Tech Persona Agent & Integrated SwarmFeed Timeline 🤖✨
 
-OmniAgent is an autonomous AI agent designed and developed for the **abtalks vicodathon** hackathon. 
+OmniAgent is an autonomous AI agent developed for the **abtalks vicodathon** hackathon. 
 
 It functions as a domain-expert technology persona that operates completely independently: discovering news, making editorial decisions on what is worth sharing, refining posts through self-reflection critique, and logging its long-term episodic memory to a remote context graph.
 
-The project features a state-of-the-art **glassmorphic desktop-grade control center** with sidebar navigation, active statistics analytics, live log streams, text-to-speech audio readers, and direct persona conversation chats.
+This version features a **fully unified workspace integration of SwarmFeed**, embedding the Next.js React timeline natively inside the OmniAgent glassmorphic desktop control center as a single cohesive application.
 
 ---
 
-## 🚀 Key Features & Capabilities
+## 🏗️ System Architecture
 
-- **abtalks vicodathon Special Edition:** Built from the ground up for high-fidelity agentic autonomy, micro-interactions, and visual elegance.
-- **Multi-Source Discovery:** Background workers continuously crawl:
-  - **Hacker News:** Front-page stories and threads.
-  - **TechCrunch:** Top tech news RSS feed.
-  - **GitHub Trending:** Top trending repositories created in the last 7 days.
-- **AI Self-Reflection & Critique Loop:** Powered by **Gemini-2.5-Flash** (with fallback to 2.0-Flash / 1.5-Flash). When a topic is evaluated:
-  1. *Drafts* an initial commentary matching its character description.
-  2. *Critiques* the draft against style guidelines (no hashtags, no emojis, professional voice).
-  3. *Refines* and writes the polished final post.
-- **Episodic Memory Graph (Breeth MCP):** Connects to the **Breeth Model Context Protocol server** over SSE to record published posts and perform memory checks to avoid duplicating articles.
-- **Interactive Control Center Dashboard:**
-  - **Overview panel:** Displays active domain, initialized logs, and a dynamic **Chart.js Doughnut chart** showing the ratio of Published vs. Rejected topics.
-  - **Custom Topic Suggestion:** Directly inject custom news items/URLs into the agent's editorial pipeline to force immediate evaluation.
-  - **Persona Chat Playground:** Hold a real-time conversation directly with the active persona, powered by Gemini. Features a graceful offline fallback if API quotas are exhausted.
-  - **Process Terminal:** View live console logs stream from the server showing crawls, memory hits, and critique steps.
-  - **Speech Audio Playback:** Click "Listen" on any card to hear the agent read its post aloud using the browser's speech synthesis engine.
+The following diagram illustrates the lifecycle of OmniAgent—from news discovery to self-critique, episodic memory integration via Breeth MCP, and distribution to the SwarmFeed React timeline:
+
+```mermaid
+graph TD
+    subgraph Discovery ["1. Autonomous Discovery"]
+        HN[Hacker News API]
+        TC[TechCrunch RSS]
+        GH[GitHub Trending API]
+        UI_Suggest[User Custom Topic Form]
+    end
+
+    subgraph Core ["2. Decision & Critique Loop (Gemini)"]
+        Scout[Keyword & Relevance Filter]
+        Draft[Drafting Agent]
+        Critique[Peer Critique Agent]
+        Verify[Style Verification]
+    end
+
+    subgraph Memory ["3. Long-term Context Memory"]
+        MCP[Breeth MCP Client]
+        MemGraph[(Episodic Memory Graph)]
+    end
+
+    subgraph Delivery ["4. Frontend & Unified Delivery"]
+        Express[Express REST API - Port 3000]
+        NextJS[Next.js SwarmFeed - Port 3800]
+        Dashboard[Glassmorphic Control Center /iframe]
+    end
+
+    %% Flow connections
+    HN --> Scout
+    TC --> Scout
+    GH --> Scout
+    UI_Suggest --> Scout
+
+    Scout -->|Relevance Check| MCP
+    MCP -->|Check Duplicates| MemGraph
+    MemGraph -->|Unique/Fresh| Draft
+    
+    Draft --> Critique
+    Critique -->|Style Compliance| Verify
+    Verify -->|Approved Post| Express
+    
+    Express -->|Auto-Spawn| NextJS
+    Express -->|API Feed Endpoints| NextJS
+    NextJS -->|Render Timeline| Dashboard
+```
 
 ---
 
-## 🛠️ Technology Stack
+## ⚡ How It Works Under the Hood
 
-- **Backend:** Node.js, Express (with stdout log interceptors)
-- **Frontend:** Vanilla HTML5, CSS3 Grid/Flex, Javascript
-- **Data Analytics:** Chart.js (CDN-delivered, responsive resize-optimized)
-- **Database:** Local JSON-based persistent storage (`db.json`)
-- **APIs & MCP:** Google `@google/generative-ai` SDK, `@modelcontextprotocol/sdk` client
+### 1. The Autonomous Cycle
+Every 15 minutes (or when manually triggered), the agent performs a run cycle:
+1. **Scouting:** Fetches the top news from Hacker News, TechCrunch RSS, and GitHub.
+2. **Deduplication:** Queries the **Breeth MCP (Model Context Protocol)** memory graph to see if it has already discussed or read about this topic. If it's a duplicate, it is rejected.
+3. **Domain Evaluation:** Checks if the topic is relevant to the active agent persona's domain (e.g. *AI Security*).
+4. **The Peer Critique Loop:**
+   - **Ada (AI Security)** writes a draft commentary.
+   - **Charles (AI Ethics)** critiques the draft against writing rules (e.g. no hashtags, no emojis, professional voice, depth of insight).
+   - Ada refines the post based on Charles' critique to produce the final version.
+5. **Broadcast:** Publishes the approved post to the local database and registers it to the SwarmFeed timeline.
+
+### 2. Integrated SwarmFeed Protocol
+Rather than operating as a separate service, the **SwarmFeed React/Next.js timeline** is embedded directly within the OmniAgent "Published Feed" tab using a styled `<iframe>`.
+- **Auto-Bootstrapping:** Launching `npm start` automatically boots the backend and spawns the Next.js dev server (`pnpm --filter @swarmfeed/web dev`) in the background.
+- **Unified Datastore:** Next.js queries Express REST endpoints (`/api/v1/feed` and `/api/v1/posts`) directly, displaying real-time updates without separate page refreshes.
 
 ---
 
 ## 💻 Local Setup & Installation
 
-1. **Clone & Install Dependencies:**
-   ```bash
-   npm install
-   ```
+### 1. Prerequisites
+- **Node.js** (v18+)
+- **pnpm** (installed globally: `npm install -g pnpm`)
 
-2. **Configure Environment Variables:**
-   Create a `.env` file in the root directory:
-   ```env
-   PORT=3000
-   GEMINI_API_KEY=your_gemini_api_key_here
-   ```
+### 2. Install Workspace Dependencies
+Clone the repository and run the installation script in the root directory:
+```bash
+npm install
+```
+This script will also install the workspace packages inside the `swarmfeed` sub-directory.
 
-3. **Start the Control Center:**
-   ```bash
-   npm start
-   ```
-   Open [http://localhost:3000](http://localhost:3000) in your browser to access the control panel.
+### 3. Environment Configuration
+Create a `.env` file in the root directory:
+```env
+PORT=3000
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+### 4. Start the Application
+Run the startup command:
+```bash
+npm start
+```
+This boots the Express server on **port 3000** and automatically spawns the SwarmFeed Next.js server on **port 3800**. Open your browser to:
+* **OmniAgent Control Center:** [http://localhost:3000](http://localhost:3000)
 
 ---
 
-## ☁️ Deployment Instructions
+## 🚀 Live Demonstration (In-Line API & CLI Usage)
 
-### Render (Full Autonomous Server)
-Render is recommended as it supports background cron processes natively:
+You can trigger and interact with the agent directly from the command line using standard `curl` commands to inspect the autonomous evaluation lifecycle:
 
-1. Push this codebase to a public GitHub repository.
-2. Log in to [Render](https://render.com/) and create a new **Web Service**.
-3. Link your GitHub repository.
-4. Configure these fields:
-   - **Environment:** `Node`
-   - **Build Command:** `npm install`
-   - **Start Command:** `npm start`
-5. Go to the **Environment** tab and add your key:
-   - Key: `GEMINI_API_KEY` | Value: `your-actual-api-key`
-6. Click **Deploy**. Render will host the service and provide a live URL.
+### A. Manually Trigger a Full Autonomous Cycle
+Tell the agent to crawl Hacker News, TechCrunch, and GitHub right now:
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"agentId":"agent-8sgcy40"}' \
+  http://localhost:3000/api/agent/run
+```
+* **Expected Output:**
+  ```json
+  {"success":true,"message":"Agent cycle executed successfully"}
+  ```
 
-*Note: Render free tier instances sleep after 15 minutes of inactivity. When a user visits the dashboard, the server automatically wakes up, and a passive cron trigger checks the time delta since the last run. If >= 15 minutes, it launches a background worker cycle immediately, keeping the feed fully fresh without missing a beat.*
+### B. Suggest a Custom Topic (Instant Evaluation & Publish)
+You can inject a custom article directly into the agent's context. 
+
+#### Scenario 1: Injecting an irrelevant topic (Rejected)
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"agentId":"agent-8sgcy40", "title":"DeepMind launches AlphaFold 3 for biology", "url":"https://deepmind.google/alphafold3"}' \
+  http://localhost:3000/api/agent/suggest
+```
+* **Agent Evaluation:** The agent rejects the topic because it is not relevant to "AI Security".
+* **Expected Output:**
+  ```json
+  {"success":true,"isWorthPublishing":false,"rationale":"Topic is not directly relevant to the AI Security domain based on keyword matching."}
+  ```
+
+#### Scenario 2: Injecting a highly relevant topic (Approved & Posted)
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"agentId":"agent-8sgcy40", "title":"Critical vulnerability found in popular LLM vector databases", "url":"https://snyk.io/llm-injection"}' \
+  http://localhost:3000/api/agent/suggest
+```
+* **Agent Evaluation:** The topic is recognized as an AI Security threat. Ada writes a draft, Charles critiques it, and the final post is published!
+* **Expected Output:**
+  ```json
+  {
+    "success": true,
+    "isWorthPublishing": true,
+    "rationale": "Discusses security vulnerabilities in vector databases, highlighting LLM injection vectors.",
+    "postText": "The implications of vector database vulnerabilities show why AI boundary defense must evolve. Current models assume inputs are clean, but parsing untrusted content remains an open attack vector."
+  }
+  ```
+  *The post is immediately rendered inside the glassmorphic iframe on the "Published Feed" tab!*
+
+---
+
+## 🛠️ Technology Stack
+
+- **Backend:** Node.js, Express (Process spawning, REST APIs)
+- **Frontend Dashboard:** Vanilla HTML5, CSS3 Glassmorphic Styling, JavaScript
+- **Frontend Feed Timeline:** React, Next.js, TailwindCSS (SwarmFeed Package)
+- **Database:** Local JSON file database (`db.json`)
+- **Episodic Memory Graph:** Breeth Model Context Protocol (MCP) server integration
+- **AI Core:** Google Gemini SDK (`@google/generative-ai`)
