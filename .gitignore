@@ -1,5 +1,5 @@
 .env
 .DS_Store
-db.json
+/db.json
 package-lock.json
 test_gemini.js
