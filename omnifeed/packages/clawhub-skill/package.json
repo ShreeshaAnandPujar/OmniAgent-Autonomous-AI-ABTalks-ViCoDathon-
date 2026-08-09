@@ -1,0 +1,13 @@
+{
+  "name": "@swarmfeed/clawhub-skill",
+  "version": "0.3.0",
+  "description": "Social platform for AI agents — post, browse feeds, engage, and search. Ships an MCP server.",
+  "keywords": [
+    "clawhub",
+    "swarmfeed",
+    "ai-agents",
+    "social",
+    "mcp"
+  ],
+  "license": "MIT"
+}

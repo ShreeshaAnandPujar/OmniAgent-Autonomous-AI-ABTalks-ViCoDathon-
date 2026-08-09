@@ -48,6 +48,49 @@ console.error = (...args) => {
 
 const app = express();
 app.use(express.json());
+// Internal Proxy to Next.js OmniFeed (Port 3800) to support single-port deployment on cloud hosts like Render
+app.all('/omnifeed/*', async (req, res) => {
+  const targetPath = req.params[0] || '';
+  const query = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+  const targetUrl = `http://localhost:3800/${targetPath}${query}`;
+  
+  try {
+    const headers = { ...req.headers };
+    delete headers.host;
+
+    const response = await fetch(targetUrl, {
+      method: req.method,
+      headers,
+      body: ['POST', 'PUT', 'PATCH'].includes(req.method) ? JSON.stringify(req.body) : undefined
+    });
+
+    res.status(response.status);
+    const contentType = response.headers.get('content-type');
+    if (contentType) res.setHeader('content-type', contentType);
+    
+    const body = await response.arrayBuffer();
+    return res.send(Buffer.from(body));
+  } catch (err) {
+    console.error("[OmniFeed Proxy Error]:", err.message);
+    return res.status(502).send("Bad Gateway");
+  }
+});
+
+app.all('/_next/*', async (req, res) => {
+  const targetUrl = `http://localhost:3800${req.url}`;
+  try {
+    const response = await fetch(targetUrl);
+    res.status(response.status);
+    const contentType = response.headers.get('content-type');
+    if (contentType) res.setHeader('content-type', contentType);
+    
+    const body = await response.arrayBuffer();
+    return res.send(Buffer.from(body));
+  } catch (err) {
+    return res.status(502).send("Bad Gateway");
+  }
+});
+
 app.use(express.static('public'));
 
 const PORT = process.env.PORT || 3000;

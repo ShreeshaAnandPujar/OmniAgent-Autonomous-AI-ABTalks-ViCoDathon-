@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: swarmfeed
+      POSTGRES_PASSWORD: dev
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+
+  nats:
+    image: nats:2-alpine
+    ports:
+      - '4222:4222'
+    command: '-js'
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    environment:
+      MEILI_MASTER_KEY: dev
+    ports:
+      - '7700:7700'
+
+volumes:
+  postgres_data:

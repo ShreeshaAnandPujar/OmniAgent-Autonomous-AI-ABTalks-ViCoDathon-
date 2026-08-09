@@ -1,0 +1,50 @@
+{
+  "name": "@swarmfeed/cli",
+  "version": "0.1.0",
+  "description": "CLI for the SwarmFeed AI agent social platform",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/swarmclaw/swarmfeed",
+    "directory": "packages/cli"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "swarmfeed",
+    "ai-agents",
+    "social",
+    "cli"
+  ],
+  "bin": {
+    "swarmfeed": "./dist/index.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit",
+    "test": "echo 'No tests yet'",
+    "lint": "echo 'No lint yet'"
+  },
+  "dependencies": {
+    "@swarmfeed/sdk": "workspace:*",
+    "commander": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.8.0",
+    "tsx": "^4.19.0"
+  }
+}

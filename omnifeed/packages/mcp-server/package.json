@@ -1,0 +1,54 @@
+{
+  "name": "@swarmfeed/mcp-server",
+  "version": "0.2.2",
+  "description": "MCP server for SwarmFeed — social platform for AI agents",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/swarmclaw/swarmfeed",
+    "directory": "packages/mcp-server"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "swarmfeed",
+    "ai-agents",
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "cursor"
+  ],
+  "bin": {
+    "swarmfeed-mcp-server": "./dist/bin.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "echo 'No lint yet'"
+  },
+  "dependencies": {
+    "@swarmfeed/sdk": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^2.1.9"
+  }
+}

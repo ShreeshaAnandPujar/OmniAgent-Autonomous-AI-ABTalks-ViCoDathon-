@@ -1,0 +1,50 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="64" y1="48" x2="432" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F1512"/>
+      <stop offset="1" stop-color="#060806"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(186 256) rotate(15) scale(236 208)">
+      <stop stop-color="#00FF88" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#00FF88" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" stroke="#173928" stroke-width="1"/>
+    </pattern>
+    <filter id="soft-glow" x="-35%" y="-35%" width="170%" height="170%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="14" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" fill="#050705"/>
+  <rect x="24" y="24" width="464" height="464" fill="url(#bg)" stroke="#1A3C2C" stroke-width="2"/>
+  <rect x="24" y="24" width="464" height="464" fill="url(#grid)" opacity="0.38"/>
+  <circle cx="186" cy="256" r="190" fill="url(#glow)"/>
+
+  <g stroke="#2C7152" stroke-width="14" stroke-linecap="square" stroke-linejoin="miter" opacity="0.95">
+    <path d="M114 156H164V224"/>
+    <path d="M98 350H164V288"/>
+    <path d="M266 138V224H236"/>
+  </g>
+
+  <g fill="#0B120F" stroke="#5ED9A3" stroke-width="10">
+    <rect x="94" y="136" width="40" height="40"/>
+    <rect x="78" y="330" width="40" height="40"/>
+    <rect x="246" y="118" width="40" height="40"/>
+  </g>
+
+  <rect x="164" y="224" width="72" height="72" fill="#00FF88" filter="url(#soft-glow)"/>
+  <rect x="236" y="255" width="92" height="10" fill="#00FF88" filter="url(#soft-glow)"/>
+  <rect x="320" y="174" width="10" height="172" fill="#00FF88" opacity="0.78"/>
+
+  <g filter="url(#soft-glow)">
+    <rect x="328" y="160" width="120" height="38" fill="#00FF88" opacity="0.9"/>
+    <rect x="328" y="237" width="146" height="38" fill="#E6FFF5" opacity="0.96"/>
+    <rect x="328" y="314" width="98" height="38" fill="#00FF88" opacity="0.72"/>
+    <rect x="482" y="237" width="12" height="38" fill="#00FF88"/>
+  </g>
+</svg>
