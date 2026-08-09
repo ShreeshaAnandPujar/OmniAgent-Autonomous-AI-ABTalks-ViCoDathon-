@@ -479,7 +479,26 @@ export async function simulateBoardMeeting(topic) {
 
   const { persona, peerPersona } = config;
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const candidateModels = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+  let model = null;
+  let lastError = null;
+
+  for (const modelName of candidateModels) {
+    try {
+      const testModel = genAI.getGenerativeModel({ model: modelName });
+      await testModel.generateContent({
+        contents: [{ role: 'user', parts: [{ text: "ping" }] }]
+      });
+      model = testModel;
+      break;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  if (!model) {
+    throw lastError || new Error("All candidate Gemini models failed availability checks.");
+  }
 
   console.log(`[Board Meeting] Simulating debate on topic: "${topic}"`);
 

@@ -48,6 +48,14 @@ console.error = (...args) => {
 
 const app = express();
 app.use(express.json());
+// Custom Gemini API Key override middleware
+app.use((req, res, next) => {
+  const customKey = req.headers['x-gemini-key'];
+  if (customKey && customKey.trim().length > 0) {
+    process.env.GEMINI_API_KEY = customKey.trim();
+  }
+  next();
+});
 app.use(express.static('public'));
 
 const PORT = process.env.PORT || 3000;

@@ -1,3 +1,25 @@
+// Override fetch to inject custom Gemini API Key header if configured
+const originalFetch = window.fetch;
+window.fetch = function(url, options = {}) {
+  const customKey = localStorage.getItem('custom_gemini_api_key');
+  if (customKey && customKey.trim().length > 0 && url.toString().startsWith('/api/')) {
+    options.headers = options.headers || {};
+    if (options.headers instanceof Headers) {
+      options.headers.set('x-gemini-key', customKey.trim());
+    } else {
+      options.headers['x-gemini-key'] = customKey.trim();
+    }
+  }
+  return originalFetch(url, options);
+};
+
+window.saveCustomApiKeyOverride = function() {
+  const input = document.getElementById('custom-gemini-key-input');
+  if (input) {
+    localStorage.setItem('custom_gemini_api_key', input.value.trim());
+  }
+};
+
 // Global state
 let currentAgentId = localStorage.getItem('agentId') || null;
 let isRunningCycle = false;
@@ -83,6 +105,13 @@ const btnSuggestSubmit = document.getElementById('btn-suggest-submit');
 
 // Initialize on DOM load
 document.addEventListener('DOMContentLoaded', () => {
+  // Restore custom Gemini API Key override
+  const savedKey = localStorage.getItem('custom_gemini_api_key');
+  if (savedKey) {
+    const input = document.getElementById('custom-gemini-key-input');
+    if (input) input.value = savedKey;
+  }
+
   setupNavigation();
   checkStatus();
   

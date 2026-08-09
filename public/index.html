@@ -87,7 +87,9 @@
         <div class="header-title">
           <h1 id="current-tab-title">Overview</h1>
         </div>
-        <div class="header-system-info">
+        <div class="header-system-info" style="display: flex; align-items: center; gap: 16px;">
+          <input type="password" id="custom-gemini-key-input" placeholder="🔑 Override Gemini API Key..." style="width: 200px; padding: 6px 10px; font-size: 11px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.3); color: #fff; outline: none;" oninput="saveCustomApiKeyOverride()">
+          
           <div class="env-badges">
             <div class="env-item">
               <span>Gemini:</span>
