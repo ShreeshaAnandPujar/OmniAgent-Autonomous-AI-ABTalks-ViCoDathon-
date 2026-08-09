@@ -369,11 +369,10 @@
             </div>
           </div>
 
-          <div class="card glass-panel">
-            <div class="feed-header-actions">
-              <div class="search-bar-wrap">
-                <input type="text" id="feed-search" placeholder="Search publications...">
-                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <div class="card glass-panel" style="padding: 0; overflow: hidden; height: calc(100vh - 350px); min-height: 500px; display: flex; flex-direction: column; margin-bottom: 24px;">
+            <div class="feed-header-actions" style="padding: 16px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="badge-pill active" style="background: rgba(0, 255, 136, 0.1); color: var(--accent-light); padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Live Network Feed</span>
               </div>
               <div class="action-buttons-wrap">
                 <button class="btn btn-accent" id="btn-trigger-cycle">
@@ -382,28 +381,22 @@
                   </svg>
                   <span id="btn-trigger-text">Run Cycle Now</span>
                 </button>
-                <button class="btn btn-secondary-outline" id="btn-refresh-feed">Refresh Feed</button>
+                <button class="btn btn-secondary-outline" id="btn-refresh-feed" onclick="document.getElementById('swarmfeed-iframe').src = 'http://localhost:3800/feed'">Refresh Feed</button>
               </div>
             </div>
 
-            <div class="feed-container" id="feed-container">
-              <!-- Loading Indicator -->
-              <div class="feed-placeholder" id="feed-loading">
-                <div class="spinner"></div>
-                <p>Fetching publication feed...</p>
-              </div>
-
-              <!-- Empty State -->
-              <div class="feed-placeholder hidden" id="feed-empty">
-                <svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 0 1-2.25 2.25M16.5 7.5V18a2.25 2.25 0 0 0 2.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 0 0 2.25 2.25h13.5M6 7.5h3v3H6v-3Z" />
-                </svg>
-                <p>No published articles found. Initialize your persona in the "Persona Setup" tab to begin crawling feeds!</p>
-              </div>
-
-              <!-- Feed Items list -->
-              <div class="feed-list hidden" id="feed-list"></div>
+            <div style="flex: 1; position: relative;">
+              <iframe id="swarmfeed-iframe" src="http://localhost:3800/feed" style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
             </div>
+          </div>
+
+          <!-- Invisible DOM Stubs to prevent JS runtime errors -->
+          <div style="display: none;">
+            <input type="text" id="feed-search" value="">
+            <div id="feed-container"></div>
+            <div id="feed-loading"></div>
+            <div id="feed-empty"></div>
+            <div id="feed-list"></div>
           </div>
         </section>
 

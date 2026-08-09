@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+import { spawn } from 'child_process';
 import { db } from './db.js';
 import { runAgentCycle, processSingleTopic } from './agent.js';
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -649,17 +650,24 @@ app.post('/api/v1/posts', (req, res) => {
 
   const config = db.getConfig();
   const agentName = config ? config.persona.name : 'Ada';
-  const agentDomain = config ? config.persona.domain : 'AI Security';
+  const agentId = config ? config.swarmFeedAgentId || 'agent-default' : 'agent-default';
 
   const newPost = {
     id: `p-${Date.now()}`,
+    agentId: agentId,
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     text: content,
     content: content,
     author: {
-      id: config ? config.swarmFeedAgentId || 'agent-default' : 'agent-default',
+      id: agentId,
       name: agentName,
       username: `@${agentName.replace(/\s+/g, '')}`
+    },
+    agent: {
+      id: agentId,
+      name: agentName,
+      framework: 'Gemini Agent'
     },
     rationale: metadata?.rationale || "SwarmFeed post broadcasted",
     sources: metadata?.sources || [],
@@ -671,6 +679,8 @@ app.post('/api/v1/posts', (req, res) => {
     likeCount: metadata?.likes || Math.floor(Math.random() * 20) + 5,
     replyCount: metadata?.comments ? metadata.comments.length : 0,
     repostCount: metadata?.retweets || Math.floor(Math.random() * 8) + 2,
+    bookmarkCount: 0,
+    isFlagged: false,
     channelId,
     parentId,
     quotedPostId
@@ -681,22 +691,40 @@ app.post('/api/v1/posts', (req, res) => {
   return res.status(201).json(newPost);
 });
 
+// Helper to map and backfill agent schema fields
+function mapPostsToSwarmFeed(posts) {
+  const config = db.getConfig();
+  const agentName = config ? config.persona.name : 'Ada';
+  const agentId = config ? config.swarmFeedAgentId || 'agent-default' : 'agent-default';
+
+  return posts.map(p => ({
+    ...p,
+    content: p.content || p.text,
+    agentId: p.agentId || agentId,
+    agent: p.agent || {
+      id: p.author?.id || agentId,
+      name: p.author?.name || agentName,
+      framework: 'Gemini Agent'
+    }
+  }));
+}
+
 // 3. For You feed (personalized)
 app.get('/api/v1/feed/for-you', (req, res) => {
   const posts = db.getPosts();
-  return res.json({ posts });
+  return res.json({ posts: mapPostsToSwarmFeed(posts) });
 });
 
 // 4. Trending feed
 app.get('/api/v1/feed/trending', (req, res) => {
   const posts = db.getPosts();
-  return res.json({ posts });
+  return res.json({ posts: mapPostsToSwarmFeed(posts) });
 });
 
 // 5. Following feed
 app.get('/api/v1/feed/following', (req, res) => {
   const posts = db.getPosts();
-  return res.json({ posts });
+  return res.json({ posts: mapPostsToSwarmFeed(posts) });
 });
 
 // 6. Get single post
@@ -706,7 +734,7 @@ app.get('/api/v1/posts/:postId', (req, res) => {
   if (!post) {
     return res.status(404).json({ error: "Post not found" });
   }
-  return res.json(post);
+  return res.json(mapPostsToSwarmFeed([post])[0]);
 });
 
 // 7. Get post replies
@@ -716,21 +744,69 @@ app.get('/api/v1/posts/:postId/replies', (req, res) => {
   if (!parentPost) {
     return res.status(404).json({ error: "Post not found" });
   }
-  const replies = (parentPost.comments || []).map((c, index) => ({
-    id: `${parentPost.id}-reply-${index}`,
-    createdAt: parentPost.createdAt,
-    text: c.text,
-    content: c.text,
-    author: {
-      name: c.username,
-      username: c.username
-    },
-    parentId: parentPost.id
-  }));
+  const replies = (parentPost.comments || []).map((c, index) => {
+    const commenterClean = (c.username || 'Charles').replace(/[@\s]+/g, '');
+    const commenterId = `agent-${commenterClean.toLowerCase()}`;
+    return {
+      id: `${parentPost.id}-reply-${index}`,
+      agentId: commenterId,
+      createdAt: parentPost.createdAt,
+      updatedAt: parentPost.createdAt,
+      text: c.text,
+      content: c.text,
+      author: {
+        id: commenterId,
+        name: c.username || 'Charles',
+        username: c.username || '@Charles'
+      },
+      agent: {
+        id: commenterId,
+        name: c.username || 'Charles',
+        framework: 'Peer Reviewer'
+      },
+      parentId: parentPost.id,
+      likeCount: 0,
+      replyCount: 0,
+      repostCount: 0,
+      bookmarkCount: 0,
+      isFlagged: false
+    };
+  });
   return res.json({ posts: replies });
 });
 
 // Start Server
 app.listen(PORT, () => {
   console.log(`Autonomous Agent Server running on port ${PORT}`);
+
+  // Automatically start SwarmFeed Next.js dev server on port 3800
+  console.log("[SwarmFeed] Spawning Next.js frontend dev server in background...");
+  const swarmfeedWebPath = path.join(process.cwd(), 'swarmfeed');
+
+  const nextProcess = spawn('pnpm', ['--filter', '@swarmfeed/web', 'dev'], {
+    cwd: swarmfeedWebPath,
+    env: {
+      ...process.env,
+      NEXT_PUBLIC_API_URL: `http://localhost:${PORT}`
+    },
+    shell: true
+  });
+
+  nextProcess.stdout.on('data', (data) => {
+    const out = data.toString();
+    if (out.includes('Ready') || out.includes('localhost:3800')) {
+      console.log(`[SwarmFeed Web] ${out.trim()}`);
+    }
+  });
+
+  nextProcess.stderr.on('data', (data) => {
+    const err = data.toString();
+    if (err.includes('Error') || err.includes('failed')) {
+      console.error(`[SwarmFeed Web Error] ${err.trim()}`);
+    }
+  });
+
+  nextProcess.on('close', (code) => {
+    console.log(`[SwarmFeed Web] Process exited with code ${code}`);
+  });
 });
