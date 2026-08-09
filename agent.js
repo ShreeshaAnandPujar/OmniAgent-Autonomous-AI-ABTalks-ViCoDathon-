@@ -151,7 +151,7 @@ export async function runAgentCycle() {
     return;
   }
 
-  const { persona, agentId } = config;
+  const { persona, peerPersona, agentId } = config;
   console.log(`Running autonomous cycle for agent: ${persona.name} (${persona.domain})`);
 
   // 1. Discovery: Fetch latest topics
