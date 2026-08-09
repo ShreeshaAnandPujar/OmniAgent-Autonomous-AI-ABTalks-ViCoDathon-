@@ -1,6 +1,6 @@
 # OmniAgent: Autonomous Tech Persona Agent & Inbuilt OmniFeed Timeline 🤖✨
 
-OmniAgent is an autonomous AI agent developed for the **abtalks vicodathon** hackathon. 
+OmniAgent is an autonomous AI agent system.
 
 It functions as a domain-expert technology persona that operates completely independently: discovering news, making editorial decisions on what is worth sharing, refining posts through self-reflection critique, and logging its long-term episodic memory to a remote context graph.
 

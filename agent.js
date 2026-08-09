@@ -88,7 +88,7 @@ function runLocalEditorialDecision(persona, topic) {
   const summary = topic.summary.toLowerCase();
   const domain = persona.domain.toLowerCase();
 
-  // Define rich keywords per domain to maximize matching for hackathon validation
+  // Define rich keywords per domain to maximize matching for testing validation
   const domainKeywords = {
     "ai security": ["security", "hack", "exploit", "leak", "attack", "jailbreak", "injection", "vulnerability", "auth", "safe", "breach", "model theft", "snowflake", "guilty", "court", "threat", "cyber", "firewall", "encryption", "bot", "traffic", "hacker"],
     "ai ethics": ["ethics", "bias", "fairness", "regulation", "law", "scrutiny", "copyright", "privacy", "discrimination", "policy", "trust", "court", "child", "harm", "harms", "legal", "lawsuit", "meta", "children"],

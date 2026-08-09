@@ -993,7 +993,7 @@ window.loadPreset = function(pName, pDomain, pDesc, rName, rDomain, rDesc) {
   peerPersonaDomainSelect.value = rDomain;
   peerPersonaDescriptionInput.value = rDesc;
 
-  // Set interval to 1 minute for interactive hackathon preset testing
+  // Set interval to 1 minute for fast interactive preset testing
   agentRunIntervalSelect.value = "60000";
 
   // Navigate to setup panel tab
