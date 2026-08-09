@@ -1126,142 +1126,121 @@ window.ingestScoutedTopic = async function(titleEscaped, urlEscaped, btnElement)
   }
 };
 
-let selectedWorkspaceFilepath = null;
+window.runBoardDebateSim = async function() {
+  const input = document.getElementById('debate-topic-input');
+  const btn = document.getElementById('btn-convene-debate');
+  const statusBadge = document.getElementById('board-meeting-status');
+  const body = document.getElementById('debate-dialogue-body');
 
-window.fetchWorkspaceFiles = async function() {
-  const treeContainer = document.getElementById('workspace-file-tree');
-  treeContainer.innerHTML = `<div style="padding: 12px; font-size: 12px; color: var(--color-text-muted);">Scanning files...</div>`;
-
-  try {
-    const res = await fetch('/api/workspace/files');
-    if (!res.ok) throw new Error("Failed to fetch workspace files");
-    const data = await res.json();
-
-    treeContainer.innerHTML = '';
-    if (!data.files || data.files.length === 0) {
-      treeContainer.innerHTML = `<div style="padding: 12px; font-size: 12px; color: var(--color-text-muted);">No files found.</div>`;
-      return;
-    }
-
-    data.files.forEach(file => {
-      const fileEl = document.createElement('div');
-      fileEl.className = 'workspace-file-item';
-      fileEl.style.padding = '8px 10px';
-      fileEl.style.borderRadius = '6px';
-      fileEl.style.cursor = 'pointer';
-      fileEl.style.fontSize = '12.5px';
-      fileEl.style.color = '#e2e8f0';
-      fileEl.style.display = 'flex';
-      fileEl.style.justifyContent = 'space-between';
-      fileEl.style.alignItems = 'center';
-      fileEl.style.background = selectedWorkspaceFilepath === file.path ? 'rgba(0, 245, 212, 0.15)' : 'rgba(255, 255, 255, 0.02)';
-      fileEl.style.border = selectedWorkspaceFilepath === file.path ? '1px solid rgba(0, 245, 212, 0.3)' : '1px solid rgba(255, 255, 255, 0.05)';
-      fileEl.style.transition = 'all 0.2s';
-      
-      fileEl.innerHTML = `
-        <span style="font-family: monospace; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; flex: 1;">📄 ${file.path}</span>
-        <span style="font-size: 10px; color: var(--color-text-muted); margin-left: 8px;">${(file.size / 1024).toFixed(1)} KB</span>
-      `;
-
-      fileEl.onclick = () => {
-        selectWorkspaceFile(file.path);
-        // Highlight active tree item
-        document.querySelectorAll('.workspace-file-item').forEach(item => {
-          item.style.background = 'rgba(255, 255, 255, 0.02)';
-          item.style.borderColor = 'rgba(255, 255, 255, 0.05)';
-        });
-        fileEl.style.background = 'rgba(0, 245, 212, 0.15)';
-        fileEl.style.borderColor = 'rgba(0, 245, 212, 0.3)';
-      };
-
-      treeContainer.appendChild(fileEl);
-    });
-
-  } catch (err) {
-    console.error(err);
-    treeContainer.innerHTML = `<div style="padding: 12px; font-size: 12px; color: var(--color-danger);">Failed to load workspace structure.</div>`;
-  }
-};
-
-window.selectWorkspaceFile = async function(filepath) {
-  selectedWorkspaceFilepath = filepath;
-  const title = document.getElementById('workspace-editor-title');
-  const sizeLabel = document.getElementById('workspace-editor-size');
-  const editor = document.getElementById('workspace-code-editor');
-
-  title.textContent = `Reading: ${filepath}...`;
-  editor.value = 'Loading file contents...';
-
-  try {
-    const res = await fetch(`/api/workspace/file?filepath=${encodeURIComponent(filepath)}`);
-    if (!res.ok) throw new Error("Failed to load file contents");
-    const data = await res.json();
-
-    title.textContent = `📄 ${filepath}`;
-    sizeLabel.textContent = `${(data.content.length / 1024).toFixed(2)} KB`;
-    editor.value = data.content;
-  } catch (err) {
-    console.error(err);
-    title.textContent = 'Error loading file';
-    editor.value = 'Failed to load file content. Verify permissions or file path.';
-  }
-};
-
-window.runWorkspaceRefactor = async function() {
-  const promptArea = document.getElementById('workspace-refactor-prompt');
-  const btn = document.getElementById('btn-workspace-refactor');
-  const editor = document.getElementById('workspace-code-editor');
-
-  const prompt = promptArea.value.trim();
-  if (!selectedWorkspaceFilepath) {
-    showToast('Please select a file from the explorer on the left first!', 'warning');
-    return;
-  }
-  if (!prompt) {
-    showToast('Please enter a modification instruction for the Refactor Agent!', 'warning');
+  const topic = input.value.trim();
+  if (!topic) {
+    showToast('Please enter a topic to debate!', 'warning');
     return;
   }
 
   // Set loading state
   btn.disabled = true;
-  btn.querySelector('span').textContent = 'Coding...';
-  
-  const originalEditorValue = editor.value;
-  editor.value = `[OpenHands Agent Executing Refactoring Loop...]\n\nTask Instruction:\n"${prompt}"\n\nQuerying Gemini-2.5-Flash and performing source modifications...`;
-  showToast('AI Coding Agent initialized. Running refactoring loop...', 'info');
+  btn.textContent = 'Debating...';
+  statusBadge.textContent = 'Debating...';
+  statusBadge.style.background = 'rgba(0, 255, 136, 0.15)';
+  statusBadge.style.color = '#00ff88';
+
+  body.innerHTML = `
+    <div style="text-align: center; color: var(--color-text-muted); font-size: 13.5px; padding-top: 40px;">
+      <svg class="icon-spin" viewBox="0 0 24 24" style="width:24px;height:24px;margin-bottom:8px;display:inline-block;color:#00ff88;">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" stroke-dasharray="32" stroke-linecap="round"></circle>
+      </svg>
+      <br>Convening agent board members for debate session...
+    </div>
+  `;
 
   try {
-    const res = await fetch('/api/workspace/refactor', {
+    const res = await fetch('/api/agent/board-meeting', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        filepath: selectedWorkspaceFilepath,
-        prompt: prompt
-      })
+      body: JSON.stringify({ topic })
     });
 
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Refactor operation failed');
-    }
-
+    if (!res.ok) throw new Error("Debate request failed");
     const data = await res.json();
-    showToast('File edited successfully!', 'success');
-    
-    // Reload file contents
-    editor.value = data.newCode;
-    promptArea.value = '';
-    
-    // Refresh log terminal to show workspace progress
-    if (window.fetchLogs) {
-      await window.fetchLogs();
-    }
+
+    body.innerHTML = '';
+
+    // Append Turn 1: Primary Agent
+    const bubble1 = document.createElement('div');
+    bubble1.className = 'chat-bubble agent-bubble';
+    bubble1.style.marginBottom = '16px';
+    bubble1.innerHTML = `
+      <div style="font-weight: 700; color: var(--accent-light); font-size: 12px; margin-bottom: 4px; text-transform: uppercase;">
+        🎙️ ${data.primaryAgent.name} (${data.primaryAgent.domain})
+      </div>
+      <p style="margin: 0; line-height: 1.5;">${data.primaryAgent.argument}</p>
+    `;
+    body.appendChild(bubble1);
+    body.scrollTop = body.scrollHeight;
+
+    // Simulate slight delay for Turn 2
+    await new Promise(r => setTimeout(r, 1500));
+
+    // Append Turn 2: Peer Agent
+    const bubble2 = document.createElement('div');
+    bubble2.className = 'chat-bubble peer-bubble';
+    bubble2.style.background = 'rgba(255, 255, 255, 0.04)';
+    bubble2.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+    bubble2.style.color = '#fff';
+    bubble2.style.borderRadius = '12px';
+    bubble2.style.padding = '12px 16px';
+    bubble2.style.alignSelf = 'flex-start';
+    bubble2.style.maxWidth = '85%';
+    bubble2.style.marginBottom = '16px';
+    bubble2.innerHTML = `
+      <div style="font-weight: 700; color: #ffbe0b; font-size: 12px; margin-bottom: 4px; text-transform: uppercase;">
+        🎙️ ${data.peerAgent.name} (${data.peerAgent.domain})
+      </div>
+      <p style="margin: 0; line-height: 1.5;">${data.peerAgent.critique}</p>
+    `;
+    body.appendChild(bubble2);
+    body.scrollTop = body.scrollHeight;
+
+    // Simulate slight delay for Turn 3
+    await new Promise(r => setTimeout(r, 1500));
+
+    // Append Turn 3: Consensus
+    const bubble3 = document.createElement('div');
+    bubble3.className = 'chat-bubble consensus-bubble';
+    bubble3.style.background = 'rgba(0, 255, 136, 0.05)';
+    bubble3.style.border = '1px solid rgba(0, 255, 136, 0.2)';
+    bubble3.style.color = '#fff';
+    bubble3.style.borderRadius = '12px';
+    bubble3.style.padding = '12px 16px';
+    bubble3.style.alignSelf = 'center';
+    bubble3.style.width = '100%';
+    bubble3.style.maxWidth = '90%';
+    bubble3.style.textAlign = 'center';
+    bubble3.style.marginBottom = '8px';
+    bubble3.innerHTML = `
+      <div style="font-weight: 700; color: #00ff88; font-size: 12px; margin-bottom: 4px; text-transform: uppercase;">
+        ⚖️ Board Consensus Recommendation
+      </div>
+      <p style="margin: 0; line-height: 1.5; font-style: italic;">"${data.consensus}"</p>
+    `;
+    body.appendChild(bubble3);
+    body.scrollTop = body.scrollHeight;
+
+    showToast('Board debate concluded successfully!', 'success');
   } catch (err) {
     console.error(err);
-    showToast(err.message || 'Refactor request failed', 'error');
-    editor.value = originalEditorValue; // Rollback viewer
+    body.innerHTML = `
+      <div style="text-align: center; color: var(--color-danger); font-size: 13px; padding-top: 40px;">
+        Failed to convene board meeting. Verify your Gemini API key and connection.
+      </div>
+    `;
+    showToast('Failed to run board debate simulation', 'error');
   } finally {
     btn.disabled = false;
-    btn.querySelector('span').textContent = 'Refactor File';
+    btn.textContent = 'Convene Board';
+    statusBadge.textContent = 'Board Idle';
+    statusBadge.style.background = 'rgba(255, 255, 255, 0.05)';
+    statusBadge.style.color = 'var(--color-text-muted)';
   }
 };

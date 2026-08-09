@@ -59,8 +59,8 @@
         </button>
         
         <button class="nav-item" data-tab="workspace">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.25 9.75L16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z"/></svg>
-          <span>Dev Sandbox</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" /></svg>
+          <span>AI Board Room</span>
         </button>
         
         <button class="nav-item" data-tab="logs">
@@ -421,41 +421,32 @@
           </div>
         </section>
 
-        <!-- Panel 7: Dev Sandbox (OpenHands Capability) -->
+        <!-- Panel 7: AI Board Room (Multi-Agent Debate) -->
         <section class="panel-view" id="panel-workspace">
-          <div style="display: grid; grid-template-columns: 240px 1fr; gap: 20px; height: calc(100vh - 180px); min-height: 500px;">
+          <div style="display: grid; grid-template-rows: auto 1fr; gap: 16px; height: calc(100vh - 180px); min-height: 500px;">
             
-            <!-- Left Column: File Explorer -->
-            <div class="card glass-panel" style="padding: 16px; display: flex; flex-direction: column; overflow: hidden; margin: 0;">
-              <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 13.5px; font-weight: 700; color: var(--accent-light); text-transform: uppercase; letter-spacing: 0.5px;">📂 Workspace Files</h3>
-              <div id="workspace-file-tree" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;">
-                <!-- Files populate here -->
+            <!-- Custom Debate Topic Form -->
+            <div class="card glass-panel" style="padding: 16px; margin: 0; display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+              <div class="form-group" style="flex: 1; min-width: 250px; gap: 6px; margin: 0;">
+                <label for="debate-topic-input" style="font-size: 11px; font-weight: 700; color: var(--accent-light); text-transform: uppercase;">Convene AI Board Debate</label>
+                <input type="text" id="debate-topic-input" placeholder="e.g. Should technology companies open-source advanced generative model weights?" style="padding: 8px 12px; font-size: 12.5px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: #fff; width: 100%;">
               </div>
+              <button onclick="runBoardDebateSim()" class="btn btn-accent" id="btn-convene-debate" style="height: 37px; padding: 0 20px; font-size: 12.5px; border-radius: 8px; font-weight: 700;">Convene Board</button>
             </div>
 
-            <!-- Right Column: Code Editor & Agent Terminal -->
-            <div style="display: grid; grid-template-rows: 1fr 180px; gap: 16px;">
-              
-              <!-- Code view & Editor -->
-              <div class="card glass-panel" style="display: flex; flex-direction: column; overflow: hidden; padding: 16px; margin: 0; position: relative;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                  <h3 id="workspace-editor-title" style="margin: 0; font-size: 13.5px; font-weight: 700; color: #fff;">Select a file to edit...</h3>
-                  <span id="workspace-editor-size" style="font-size: 11px; color: var(--color-text-muted);"></span>
-                </div>
-                <textarea id="workspace-code-editor" readonly style="flex: 1; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; color: #a5d6ff; font-family: 'Courier New', Courier, monospace; font-size: 12px; padding: 12px; resize: none; line-height: 1.5; white-space: pre; overflow: auto; outline: none;"></textarea>
+            <!-- Debate Live Dialogue Canvas -->
+            <div class="card glass-panel" style="padding: 20px; margin: 0; display: flex; flex-direction: column; overflow: hidden; height: 100%;">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px; margin-bottom: 16px;">
+                <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: #fff;">Simulated Debate Arena</h3>
+                <span class="badge-pill active" id="board-meeting-status" style="background: rgba(255, 255, 255, 0.05); color: var(--color-text-muted); font-size: 10px; text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">Board Idle</span>
               </div>
 
-              <!-- OpenHands Agent Command & Action Console -->
-              <div class="card glass-panel" style="display: flex; gap: 16px; padding: 16px; margin: 0; align-items: center;">
-                <div style="flex: 1; display: flex; flex-direction: column; gap: 6px; height: 100%;">
-                  <h3 style="margin: 0; font-size: 12px; color: var(--accent-light); font-weight: 700; text-transform: uppercase;">🤖 AI Code Refactor Agent</h3>
-                  <textarea id="workspace-refactor-prompt" rows="2" placeholder="Tell the agent what to implement or fix in the selected file (e.g. 'Add comments' or 'Optimize imports')..." style="flex: 1; padding: 8px 12px; font-size: 12.5px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: #fff; resize: none; outline: none;"></textarea>
+              <!-- Debate Dialogue turns scroll area -->
+              <div id="debate-dialogue-body" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding-right: 4px;">
+                <div style="text-align: center; color: var(--color-text-muted); font-size: 13px; padding-top: 40px;">
+                  Enter a discussion topic above and click <strong>Convene Board</strong> to watch your custom agent personas hold a simulated debate.
                 </div>
-                <button onclick="runWorkspaceRefactor()" class="btn btn-primary" id="btn-workspace-refactor" style="height: 50px; font-size: 13px; border-radius: 8px; width: 150px; display: flex; align-items: center; justify-content: center; font-weight: 700;">
-                  <span>Refactor File</span>
-                </button>
               </div>
-
             </div>
 
           </div>

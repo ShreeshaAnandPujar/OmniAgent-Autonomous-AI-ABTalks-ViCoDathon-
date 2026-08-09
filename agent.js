@@ -470,3 +470,91 @@ Respond with a JSON object containing an array of replies:
 
   return decision;
 }
+
+export async function simulateBoardMeeting(topic) {
+  const config = db.getConfig();
+  if (!config) {
+    throw new Error("Agent not initialized yet.");
+  }
+
+  const { persona, peerPersona } = config;
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+  console.log(`[Board Meeting] Simulating debate on topic: "${topic}"`);
+
+  // 1. Primary Agent Perspective
+  const prompt1 = `You are ${persona.name}, a technology board member specializing in "${persona.domain}".
+Style & role: "${persona.description}"
+
+We are holding an interactive board meeting on this topic:
+Topic: "${topic}"
+
+Provide your professional assessment and opening argument (2-3 sentences) on this topic. Be sharp, direct, and voice your expert perspective.
+Respond in JSON format:
+{
+  "argument": "Your opening argument here."
+}`;
+
+  const res1 = await model.generateContent({
+    contents: [{ role: 'user', parts: [{ text: prompt1 }] }],
+    generationConfig: { responseMimeType: "application/json" }
+  });
+  const data1 = JSON.parse(res1.response.text());
+
+  // 2. Peer Reviewer Critique
+  const prompt2 = `You are ${peerPersona.name}, a board member specializing in "${peerPersona.domain}".
+Style & role: "${peerPersona.description}"
+
+Your colleague ${persona.name} (${persona.domain}) has voiced this perspective:
+"${data1.argument}"
+
+We are debating this topic:
+Topic: "${topic}"
+
+Provide your counter-argument or ethical critique (2-3 sentences) from your perspective as an expert in "${peerPersona.domain}". Challenge their assumptions or raise critical ethical/fairness/governance issues.
+Respond in JSON format:
+{
+  "critique": "Your counter-argument or critique here."
+}`;
+
+  const res2 = await model.generateContent({
+    contents: [{ role: 'user', parts: [{ text: prompt2 }] }],
+    generationConfig: { responseMimeType: "application/json" }
+  });
+  const data2 = JSON.parse(res2.response.text());
+
+  // 3. Final Board Consensus / Recommendation
+  const prompt3 = `You are a neutral board recorder summarizing the discussion between ${persona.name} (${persona.domain}) and ${peerPersona.name} (${peerPersona.domain}).
+
+Discussion so far:
+${persona.name}: "${data1.argument}"
+${peerPersona.name}: "${data2.critique}"
+
+Draft a final, actionable board consensus recommendation (1-2 sentences) that bridges these two viewpoints for the organization. Keep it professional and clear.
+Respond in JSON format:
+{
+  "consensus": "The final board consensus recommendation."
+}`;
+
+  const res3 = await model.generateContent({
+    contents: [{ role: 'user', parts: [{ text: prompt3 }] }],
+    generationConfig: { responseMimeType: "application/json" }
+  });
+  const data3 = JSON.parse(res3.response.text());
+
+  return {
+    topic,
+    primaryAgent: {
+      name: persona.name,
+      domain: persona.domain,
+      argument: data1.argument
+    },
+    peerAgent: {
+      name: peerPersona.name,
+      domain: peerPersona.domain,
+      critique: data2.critique
+    },
+    consensus: data3.consensus
+  };
+}
