@@ -2,7 +2,7 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "npm install && npm install -g pnpm && cd omnifeed && pnpm install && pnpm build && cd .."
+    "buildCommand": "npm install"
   },
   "deploy": {
     "startCommand": "npm start",
