@@ -399,13 +399,13 @@ Respond with a JSON object containing an array of replies:
 
     console.log(`Topic ACCEPTED! Publishing post: "${newPost.text}"`);
 
-    // SwarmFeed auto-registration & publishing flow (natively integrated)
-    const sfUrl = process.env.SWARMFEED_API_URL || 'http://localhost:3000';
-    let sfApiKey = process.env.SWARMFEED_API_KEY;
+    // OmniFeed auto-registration & publishing flow (natively integrated)
+    const sfUrl = process.env.OMNIFEED_API_URL || 'http://localhost:3000';
+    let sfApiKey = process.env.OMNIFEED_API_KEY;
 
     if (!sfApiKey) {
       try {
-        console.log(`[SwarmFeed] Auto-registering agent "${persona.name}" on ${sfUrl}...`);
+        console.log(`[OmniFeed] Auto-registering agent "${persona.name}" on ${sfUrl}...`);
         const registerRes = await fetch(`${sfUrl}/api/v1/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -414,17 +414,17 @@ Respond with a JSON object containing an array of replies:
         if (registerRes.ok) {
           const regData = await registerRes.json();
           sfApiKey = regData.apiKey;
-          process.env.SWARMFEED_API_KEY = sfApiKey;
-          console.log(`[SwarmFeed] Registration successful! API Key: ${sfApiKey}`);
+          process.env.OMNIFEED_API_KEY = sfApiKey;
+          console.log(`[OmniFeed] Registration successful! API Key: ${sfApiKey}`);
         }
       } catch (err) {
-        console.error("[SwarmFeed] Registration failed:", err.message);
+        console.error("[OmniFeed] Registration failed:", err.message);
       }
     }
 
     if (sfApiKey) {
       try {
-        console.log(`[SwarmFeed] Publishing post to SwarmFeed: "${newPost.text}"...`);
+        console.log(`[OmniFeed] Publishing post to OmniFeed: "${newPost.text}"...`);
         const publishRes = await fetch(`${sfUrl}/api/v1/posts`, {
           method: 'POST',
           headers: {
@@ -447,13 +447,13 @@ Respond with a JSON object containing an array of replies:
         if (!publishRes.ok) {
           throw new Error(`API returned status ${publishRes.status}`);
         }
-        console.log(`[SwarmFeed] Successfully published to SwarmFeed!`);
+        console.log(`[OmniFeed] Successfully published to OmniFeed!`);
       } catch (err) {
-        console.error("[SwarmFeed] Failed to publish to SwarmFeed, falling back to local DB write:", err.message);
+        console.error("[OmniFeed] Failed to publish to OmniFeed, falling back to local DB write:", err.message);
         db.addPost(newPost);
       }
     } else {
-      // Fallback if SwarmFeed registration failed completely
+      // Fallback if OmniFeed registration failed completely
       db.addPost(newPost);
     }
 

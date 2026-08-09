@@ -185,16 +185,16 @@ app.get('/api/agent/feed', async (req, res) => {
     startBackgroundWorker();
   }
 
-  const sfUrl = process.env.SWARMFEED_API_URL;
+  const sfUrl = process.env.OMNIFEED_API_URL;
   if (sfUrl && !sfUrl.includes('localhost:3000') && !sfUrl.includes('127.0.0.1:3000')) {
     try {
-      console.log(`[SwarmFeed] Proxying feed from external SwarmFeed: ${sfUrl}...`);
+      console.log(`[OmniFeed] Proxying feed from external OmniFeed: ${sfUrl}...`);
       const response = await fetch(`${sfUrl}/api/v1/feed/for-you`, {
-        headers: process.env.SWARMFEED_API_KEY ? { 'Authorization': `Bearer ${process.env.SWARMFEED_API_KEY}` } : {}
+        headers: process.env.OMNIFEED_API_KEY ? { 'Authorization': `Bearer ${process.env.OMNIFEED_API_KEY}` } : {}
       });
       if (response.ok) {
         const data = await response.json();
-        // SwarmFeed uses content field. Map content back to text if needed.
+        // OmniFeed uses content field. Map content back to text if needed.
         const mappedPosts = (data.posts || []).map(p => ({
           ...p,
           text: p.content || p.text,
@@ -205,7 +205,7 @@ app.get('/api/agent/feed', async (req, res) => {
         return res.json({ posts: mappedPosts });
       }
     } catch (err) {
-      console.error("[SwarmFeed] Failed to proxy external feed:", err.message);
+      console.error("[OmniFeed] Failed to proxy external feed:", err.message);
     }
   }
 
@@ -614,33 +614,33 @@ Return ONLY the complete updated file content as plain text. Do not wrap it in m
 });
 
 // ==========================================
-// SwarmFeed API v1 Endpoints (Integrated)
+// OmniFeed API v1 Endpoints (Integrated)
 // ==========================================
 
-// 1. Register agent on SwarmFeed
+// 1. Register agent on OmniFeed
 app.post('/api/v1/register', (req, res) => {
   const { name } = req.body;
   if (!name) {
     return res.status(400).json({ error: "Missing agent name" });
   }
   const cleanName = name.replace(/\s+/g, '');
-  const apiKey = `sf-key-${cleanName.toLowerCase()}-${Math.random().toString(36).substring(2, 7)}`;
+  const apiKey = `of-key-${cleanName.toLowerCase()}-${Math.random().toString(36).substring(2, 7)}`;
   const agentId = `agent-${cleanName.toLowerCase()}`;
   const claimToken = `claim-${Math.random().toString(36).substring(2, 9)}`;
 
   const config = db.getConfig();
   if (config) {
-    config.swarmFeedKey = apiKey;
-    config.swarmFeedAgentId = agentId;
-    config.swarmFeedClaimToken = claimToken;
+    config.omniFeedKey = apiKey;
+    config.omniFeedAgentId = agentId;
+    config.omniFeedClaimToken = claimToken;
     db.saveConfig(config);
   }
 
-  console.log(`[SwarmFeed] Auto-registered agent "${name}" with ID: ${agentId}`);
+  console.log(`[OmniFeed] Auto-registered agent "${name}" with ID: ${agentId}`);
   return res.json({ apiKey, agentId, claimToken });
 });
 
-// 2. Create post on SwarmFeed
+// 2. Create post on OmniFeed
 app.post('/api/v1/posts', (req, res) => {
   const { content, channelId, parentId, quotedPostId, metadata } = req.body;
 
@@ -650,7 +650,7 @@ app.post('/api/v1/posts', (req, res) => {
 
   const config = db.getConfig();
   const agentName = config ? config.persona.name : 'Ada';
-  const agentId = config ? config.swarmFeedAgentId || 'agent-default' : 'agent-default';
+  const agentId = config ? config.omniFeedAgentId || 'agent-default' : 'agent-default';
 
   const newPost = {
     id: `p-${Date.now()}`,
@@ -669,7 +669,7 @@ app.post('/api/v1/posts', (req, res) => {
       name: agentName,
       framework: 'Gemini Agent'
     },
-    rationale: metadata?.rationale || "SwarmFeed post broadcasted",
+    rationale: metadata?.rationale || "OmniFeed post broadcasted",
     sources: metadata?.sources || [],
     draft: metadata?.draft || "",
     critique: metadata?.critique || "",
@@ -687,15 +687,15 @@ app.post('/api/v1/posts', (req, res) => {
   };
 
   db.addPost(newPost);
-  console.log(`[SwarmFeed] Broadcaster created post: "${content.substring(0, 50)}..."`);
+  console.log(`[OmniFeed] Broadcaster created post: "${content.substring(0, 50)}..."`);
   return res.status(201).json(newPost);
 });
 
 // Helper to map and backfill agent schema fields
-function mapPostsToSwarmFeed(posts) {
+function mapPostsToOmniFeed(posts) {
   const config = db.getConfig();
   const agentName = config ? config.persona.name : 'Ada';
-  const agentId = config ? config.swarmFeedAgentId || 'agent-default' : 'agent-default';
+  const agentId = config ? config.omniFeedAgentId || 'agent-default' : 'agent-default';
 
   return posts.map(p => ({
     ...p,
@@ -712,19 +712,19 @@ function mapPostsToSwarmFeed(posts) {
 // 3. For You feed (personalized)
 app.get('/api/v1/feed/for-you', (req, res) => {
   const posts = db.getPosts();
-  return res.json({ posts: mapPostsToSwarmFeed(posts) });
+  return res.json({ posts: mapPostsToOmniFeed(posts) });
 });
 
 // 4. Trending feed
 app.get('/api/v1/feed/trending', (req, res) => {
   const posts = db.getPosts();
-  return res.json({ posts: mapPostsToSwarmFeed(posts) });
+  return res.json({ posts: mapPostsToOmniFeed(posts) });
 });
 
 // 5. Following feed
 app.get('/api/v1/feed/following', (req, res) => {
   const posts = db.getPosts();
-  return res.json({ posts: mapPostsToSwarmFeed(posts) });
+  return res.json({ posts: mapPostsToOmniFeed(posts) });
 });
 
 // 6. Get single post
@@ -734,7 +734,7 @@ app.get('/api/v1/posts/:postId', (req, res) => {
   if (!post) {
     return res.status(404).json({ error: "Post not found" });
   }
-  return res.json(mapPostsToSwarmFeed([post])[0]);
+  return res.json(mapPostsToOmniFeed([post])[0]);
 });
 
 // 7. Get post replies
@@ -779,12 +779,12 @@ app.get('/api/v1/posts/:postId/replies', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Autonomous Agent Server running on port ${PORT}`);
 
-  // Automatically start SwarmFeed Next.js dev server on port 3800
-  console.log("[SwarmFeed] Spawning Next.js frontend dev server in background...");
-  const swarmfeedWebPath = path.join(process.cwd(), 'swarmfeed');
+  // Automatically start OmniFeed Next.js dev server on port 3800
+  console.log("[OmniFeed] Spawning Next.js frontend dev server in background...");
+  const omnifeedWebPath = path.join(process.cwd(), 'omnifeed');
 
-  const nextProcess = spawn('pnpm', ['--filter', '@swarmfeed/web', 'dev'], {
-    cwd: swarmfeedWebPath,
+  const nextProcess = spawn('pnpm', ['--filter', '@omnifeed/web', 'dev'], {
+    cwd: omnifeedWebPath,
     env: {
       ...process.env,
       NEXT_PUBLIC_API_URL: `http://localhost:${PORT}`
@@ -795,18 +795,18 @@ app.listen(PORT, () => {
   nextProcess.stdout.on('data', (data) => {
     const out = data.toString();
     if (out.includes('Ready') || out.includes('localhost:3800')) {
-      console.log(`[SwarmFeed Web] ${out.trim()}`);
+      console.log(`[OmniFeed Web] ${out.trim()}`);
     }
   });
 
   nextProcess.stderr.on('data', (data) => {
     const err = data.toString();
     if (err.includes('Error') || err.includes('failed')) {
-      console.error(`[SwarmFeed Web Error] ${err.trim()}`);
+      console.error(`[OmniFeed Web Error] ${err.trim()}`);
     }
   });
 
   nextProcess.on('close', (code) => {
-    console.log(`[SwarmFeed Web] Process exited with code ${code}`);
+    console.log(`[OmniFeed Web] Process exited with code ${code}`);
   });
 });

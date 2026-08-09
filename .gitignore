@@ -4,4 +4,4 @@ node_modules/
 db.json
 package-lock.json
 test_gemini.js
-swarmfeed/
+omnifeed/
