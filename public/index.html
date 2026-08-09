@@ -370,33 +370,31 @@
           </div>
 
           <div class="card glass-panel" style="padding: 0; overflow: hidden; height: calc(100vh - 350px); min-height: 500px; display: flex; flex-direction: column; margin-bottom: 24px;">
-            <div class="feed-header-actions" style="padding: 16px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); display: flex; justify-content: space-between; align-items: center;">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="badge-pill active" style="background: rgba(0, 255, 136, 0.1); color: var(--accent-light); padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Live Network Feed</span>
+            <div class="feed-header-actions" style="padding: 16px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+              <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 200px;">
+                <span class="badge-pill active" style="background: rgba(0, 255, 136, 0.1); color: var(--accent-light); padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Live Timeline Feed</span>
+                <input type="text" id="feed-search" placeholder="Search timeline posts..." style="padding: 6px 12px; font-size: 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0, 0, 0, 0.2); color: #fff; width: 100%; max-width: 250px;">
               </div>
-              <div class="action-buttons-wrap">
+              <div class="action-buttons-wrap" style="display: flex; gap: 8px;">
                 <button class="btn btn-accent" id="btn-trigger-cycle">
                   <svg class="icon-spin hidden" id="cycle-loading-icon" viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" stroke-dasharray="32" stroke-linecap="round"></circle>
                   </svg>
                   <span id="btn-trigger-text">Run Cycle Now</span>
                 </button>
-                <button class="btn btn-secondary-outline" id="btn-refresh-feed" onclick="document.getElementById('omnifeed-iframe').src = '/omnifeed/feed'">Refresh Feed</button>
+                <button class="btn btn-secondary-outline" id="btn-refresh-feed">Refresh Feed</button>
               </div>
             </div>
 
-            <div style="flex: 1; position: relative;">
-              <iframe id="omnifeed-iframe" src="/omnifeed/feed" style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+            <div style="flex: 1; overflow-y: auto; padding: 20px;" id="feed-container">
+              <div id="feed-loading" class="loading-state" style="text-align: center; color: var(--color-text-muted); padding: 30px;">Loading timeline posts...</div>
+              <div id="feed-empty" class="hidden" style="text-align: center; padding: 40px; color: var(--color-text-muted);">
+                No posts published yet. Run a cycle to discover and publish insights!
+              </div>
+              <div id="feed-list" style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- Feed cards will be rendered dynamically here -->
+              </div>
             </div>
-          </div>
-
-          <!-- Invisible DOM Stubs to prevent JS runtime errors -->
-          <div style="display: none;">
-            <input type="text" id="feed-search" value="">
-            <div id="feed-container"></div>
-            <div id="feed-loading"></div>
-            <div id="feed-empty"></div>
-            <div id="feed-list"></div>
           </div>
         </section>
 
